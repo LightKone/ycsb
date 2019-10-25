@@ -20,6 +20,7 @@ package site.ycsb.workloads;
 import site.ycsb.*;
 import site.ycsb.generator.*;
 import site.ycsb.generator.UniformLongGenerator;
+import site.ycsb.generator.AttributeGenerator;
 import site.ycsb.measurements.Measurements;
 
 import java.io.IOException;
@@ -347,13 +348,14 @@ public class CoreWorkload extends Workload {
   protected NumberGenerator fieldchooser;
   protected AcknowledgedCounterGenerator transactioninsertkeysequence;
   protected NumberGenerator scanlength;
+  protected AttributeGenerator attributeGenerator;
   protected boolean orderedinserts;
   protected long fieldcount;
   protected long recordcount;
+  protected long attributecount;
   protected int zeropadding;
   protected int insertionRetryLimit;
   protected int insertionRetryInterval;
-
   private Measurements measurements = Measurements.getMeasurements();
 
   protected static NumberGenerator getFieldLengthGenerator(Properties p) throws WorkloadException {
@@ -408,6 +410,14 @@ public class CoreWorkload extends Workload {
     if (recordcount == 0) {
       recordcount = Integer.MAX_VALUE;
     }
+    attributecount =
+        Long.parseLong(p.getProperty(Client.ATTRIBUTE_COUNT_PROPERTY, Client.DEFAULT_ATTRIBUTE_COUNT));
+
+    String attributedataset = p.getProperty(
+        Client.ATTRIBUTE_DATASET_PROPERTY, Client.DEFAULT_ATTRIBUTE_DATASET);
+
+    attributeGenerator = new AttributeGenerator(attributedataset);
+
     String requestdistrib =
         p.getProperty(REQUEST_DISTRIBUTION_PROPERTY, REQUEST_DISTRIBUTION_PROPERTY_DEFAULT);
     int minscanlength =
@@ -595,10 +605,15 @@ public class CoreWorkload extends Workload {
     String dbkey = buildKeyName(keynum);
     HashMap<String, ByteIterator> values = buildValues(dbkey);
 
+    List<Map<String, String>> attributeList = attributeGenerator.nextValue();
+    Map<String, String> attributes = new HashMap<String, String>();
+    for (int i=0; i<attributeList.size() && i < attributecount; i++) {
+      attributes.putAll(attributeList.get(i));
+    }
     Status status;
     int numOfRetries = 0;
     do {
-      status = db.insert(table, dbkey, values);
+      status = db.insertWithAttributes(table, dbkey, values, attributes);
       if (null != status && status.isOk()) {
         break;
       }
@@ -719,7 +734,8 @@ public class CoreWorkload extends Workload {
     }
 
     HashMap<String, ByteIterator> cells = new HashMap<String, ByteIterator>();
-    db.read(table, keyname, fields, cells);
+    Map<String, String> attributes = new HashMap<String, String>();
+    db.readWithAttributes(table, keyname, fields, cells, attributes);
 
     if (dataintegrity) {
       verifyRow(keyname, cells);
@@ -755,13 +771,19 @@ public class CoreWorkload extends Workload {
     // do the transaction
 
     HashMap<String, ByteIterator> cells = new HashMap<String, ByteIterator>();
-
+    Map<String, String> attributes = new HashMap<String, String>();
 
     long ist = measurements.getIntendedtartTimeNs();
     long st = System.nanoTime();
-    db.read(table, keyname, fields, cells);
+    db.readWithAttributes(table, keyname, fields, cells, attributes);
 
-    db.update(table, keyname, values);
+    System.out.println("before: " + Arrays.asList(attributes));
+    List<Map<String, String>> attributeList = attributeGenerator.nextValue();
+    for (int i=0; i<attributeList.size() && i < attributecount; i++) {
+      attributeList.get(i).forEach((k, v) -> {System.out.println(k + " " + v); attributes.replace(k, v); });
+    }
+    System.out.println("after: " + Arrays.asList(attributes));
+    db.updateWithAttributes(table, keyname, values, attributes);
 
     long en = System.nanoTime();
 
@@ -810,8 +832,10 @@ public class CoreWorkload extends Workload {
       // update a random field
       values = buildSingleValue(keyname);
     }
-
-    db.update(table, keyname, values);
+    Map<String, String> attributes = new HashMap<String, String>();
+    List<Map<String, String>> attributeList = attributeGenerator.nextValue();
+    attributes.putAll(attributeList.get(4));
+    db.updateWithAttributes(table, keyname, values, attributes);
   }
 
   public void doTransactionInsert(DB db) {
@@ -822,7 +846,14 @@ public class CoreWorkload extends Workload {
       String dbkey = buildKeyName(keynum);
 
       HashMap<String, ByteIterator> values = buildValues(dbkey);
-      db.insert(table, dbkey, values);
+      
+      List<Map<String, String>> attributeList = attributeGenerator.nextValue();
+      Map<String, String> attributes = new HashMap<String, String>();
+      for (int i=0; i<attributeList.size() && i < attributecount; i++) {
+        attributes.putAll(attributeList.get(i));
+      }
+
+      db.insertWithAttributes(table, dbkey, values, attributes);
     } finally {
       transactioninsertkeysequence.acknowledge(keynum);
     }

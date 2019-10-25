@@ -100,6 +100,12 @@ public class GoodBadUglyDB extends DB {
     return Status.OK;
   }
 
+  public Status readWithAttributes(String table, String key, Set<String> fields, Map<String, ByteIterator> result,
+      Map<String, String> attributes) {
+    delay();
+    return Status.OK;
+  }
+
   /**
    * Perform a range scan for a set of records in the database. Each field/value pair from the result will be stored
    * in a HashMap.
@@ -133,6 +139,12 @@ public class GoodBadUglyDB extends DB {
     return Status.OK;
   }
 
+  public Status updateWithAttributes(String table, String key,
+                                    Map<String, ByteIterator> values,
+                                    Map<String, String> attributes) {
+    return Status.OK;
+  }
+
   /**
    * Insert a record in the database. Any field/value pairs in the specified values HashMap will be written into the
    * record with the specified record key.
@@ -144,6 +156,12 @@ public class GoodBadUglyDB extends DB {
    */
   public Status insert(String table, String key, Map<String, ByteIterator> values) {
     delay();
+    return Status.OK;
+  }
+
+  public Status insertWithAttributes(String table, String key,
+                                    Map<String, ByteIterator> values,
+                                    Map<String, String> attributes) {
     return Status.OK;
   }
 

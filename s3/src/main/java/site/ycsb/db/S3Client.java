@@ -51,7 +51,7 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.SSECustomerKey;
 import com.amazonaws.services.s3.model.PutObjectRequest;
-
+import com.amazonaws.services.s3.S3ClientOptions;
 /**
  * S3 Storage client for YCSB framework.
  *
@@ -158,52 +158,18 @@ public class S3Client extends DB {
           return;
         }
         try {
-          InputStream propFile = S3Client.class.getClassLoader()
-              .getResourceAsStream("s3.properties");
-          Properties props = new Properties(System.getProperties());
-          props.load(propFile);
-          accessKeyId = props.getProperty("s3.accessKeyId");
-          if (accessKeyId == null){
-            accessKeyId = propsCL.getProperty("s3.accessKeyId");
-          }
+          accessKeyId = propsCL.getProperty("s3.accessKeyId");
           System.out.println(accessKeyId);
-          secretKey = props.getProperty("s3.secretKey");
-          if (secretKey == null){
-            secretKey = propsCL.getProperty("s3.secretKey");
-          }
+          secretKey = propsCL.getProperty("s3.secretKey");
           System.out.println(secretKey);
-          endPoint = props.getProperty("s3.endPoint");
-          if (endPoint == null){
-            endPoint = propsCL.getProperty("s3.endPoint", "s3.amazonaws.com");
-          }
+          endPoint = propsCL.getProperty("s3.endPoint", "s3.amazonaws.com");
           System.out.println(endPoint);
-          region = props.getProperty("s3.region");
-          if (region == null){
-            region = propsCL.getProperty("s3.region", "us-east-1");
-          }
+          region = propsCL.getProperty("s3.region", "us-east-1");
           System.out.println(region);
-          maxErrorRetry = props.getProperty("s3.maxErrorRetry");
-          if (maxErrorRetry == null){
-            maxErrorRetry = propsCL.getProperty("s3.maxErrorRetry", "15");
-          }
-          maxConnections = props.getProperty("s3.maxConnections");
-          if (maxConnections == null){
-            maxConnections = propsCL.getProperty("s3.maxConnections");
-          }
-          protocol = props.getProperty("s3.protocol");
-          if (protocol == null){
-            protocol = propsCL.getProperty("s3.protocol", "HTTPS");
-          }
-          sse = props.getProperty("s3.sse");
-          if (sse == null){
-            sse = propsCL.getProperty("s3.sse", "false");
-          }
-          String ssec = props.getProperty("s3.ssec");
-          if (ssec == null){
-            ssec = propsCL.getProperty("s3.ssec", null);
-          } else {
-            ssecKey = new SSECustomerKey(ssec);
-          }
+          maxErrorRetry = propsCL.getProperty("s3.maxErrorRetry", "15");
+          maxConnections = propsCL.getProperty("s3.maxConnections");
+          protocol = propsCL.getProperty("s3.protocol", "HTTPS");
+          sse = propsCL.getProperty("s3.sse", "false");
         } catch (Exception e){
           System.err.println("The file properties doesn't exist "+e.toString());
           e.printStackTrace();
@@ -224,6 +190,9 @@ public class S3Client extends DB {
           s3Client = new AmazonS3Client(s3Credentials, clientConfig);
           s3Client.setRegion(Region.getRegion(Regions.fromName(region)));
           s3Client.setEndpoint(endPoint);
+          final S3ClientOptions options = new S3ClientOptions();
+          options.setPathStyleAccess(true);
+          s3Client.setS3ClientOptions(options);
           System.out.println("Connection successfully initialized");
         } catch (Exception e){
           System.err.println("Could not connect to S3 storage: "+ e.toString());
@@ -259,7 +228,15 @@ public class S3Client extends DB {
   @Override
   public Status insert(String bucket, String key,
                        Map<String, ByteIterator> values) {
-    return writeToStorage(bucket, key, values, true, sse, ssecKey);
+    Map<String, String> attributes = new HashMap<>();
+    return writeToStorage(bucket, key, values, attributes, true, sse, ssecKey);
+  }
+
+  @Override
+  public Status insertWithAttributes(String bucket, String key,
+                                    Map<String, ByteIterator> values,
+                                    Map<String, String> attributes) {
+    return writeToStorage(bucket, key, values, attributes, true, sse, ssecKey);
   }
   /**
   * Read a file from the Bucket. Each field/value pair from the result
@@ -279,7 +256,15 @@ public class S3Client extends DB {
   @Override
   public Status read(String bucket, String key, Set<String> fields,
                      Map<String, ByteIterator> result) {
-    return readFromStorage(bucket, key, result, ssecKey);
+    Map<String, String> attributes = new HashMap<String, String>();
+    return readFromStorage(bucket, key, result, attributes, ssecKey);
+  }
+
+  @Override
+  public Status readWithAttributes(String bucket, String key, Set<String> fields,
+                     Map<String, ByteIterator> result,
+                     Map<String, String> attributes) {
+    return readFromStorage(bucket, key, result, attributes, ssecKey);
   }
   /**
   * Update a file in the database. Any field/value pairs in the specified
@@ -297,7 +282,15 @@ public class S3Client extends DB {
   @Override
   public Status update(String bucket, String key,
                        Map<String, ByteIterator> values) {
-    return writeToStorage(bucket, key, values, false, sse, ssecKey);
+    Map<String, String> attributes = new HashMap<String, String>();
+    return writeToStorage(bucket, key, values, attributes, false, sse, ssecKey);
+  }
+
+  @Override
+  public Status updateWithAttributes(String bucket, String key,
+                                    Map<String, ByteIterator> values,
+                                    Map<String, String> attributes) {
+    return writeToStorage(bucket, key, values, attributes, false, sse, ssecKey);
   }
   /**
   * Perform a range scan for a set of files in the bucket. Each
@@ -336,7 +329,8 @@ public class S3Client extends DB {
   *
   */
   protected Status writeToStorage(String bucket, String key,
-                                  Map<String, ByteIterator> values, Boolean updateMarker,
+                                  Map<String, ByteIterator> values,
+                                  Map<String, String> attributes, Boolean updateMarker,
                                   String sseLocal, SSECustomerKey ssecLocal) {
     int totalSize = 0;
     int fieldCount = values.size(); //number of fields to concatenate
@@ -369,6 +363,7 @@ public class S3Client extends DB {
     try (InputStream input = new ByteArrayInputStream(destinationArray)) {
       ObjectMetadata metadata = new ObjectMetadata();
       metadata.setContentLength(totalSize);
+      metadata.setUserMetadata(attributes);
       PutObjectRequest putObjectRequest = null;
       if (sseLocal.equals("true")) {
         metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
@@ -422,10 +417,19 @@ public class S3Client extends DB {
   *
   */
   protected Status readFromStorage(String bucket, String key,
-                                   Map<String, ByteIterator> result, SSECustomerKey ssecLocal) {
+                                   Map<String, ByteIterator> result,
+                                   Map<String, String> attributes,
+                                   SSECustomerKey ssecLocal) {
     try {
       S3Object object = getS3ObjectAndMetadata(bucket, key, ssecLocal);
       InputStream objectData = object.getObjectContent(); //consuming the stream
+
+      Map<String, String> userMetadata = object.getObjectMetadata().getUserMetadata();
+      Iterator it = userMetadata.entrySet().iterator();
+      while (it.hasNext()) {
+        Map.Entry e = (Map.Entry)it.next();
+        attributes.put(e.getKey().toString(), e.getValue().toString());
+      }
       // writing the stream to bytes and to results
       result.put(key, new ByteArrayByteIterator(IOUtils.toByteArray(objectData)));
       objectData.close();
@@ -509,7 +513,8 @@ public class S3Client extends DB {
     for (int i = startkeyNumber; i < numberOfIteration; i++){
       HashMap<String, ByteIterator> resultTemp =
           new HashMap<String, ByteIterator>();
-      readFromStorage(bucket, keyList.get(i), resultTemp,
+      Map<String, String> attributesTemp = new HashMap<String, String>();
+      readFromStorage(bucket, keyList.get(i), resultTemp, attributesTemp,
           ssecLocal);
       result.add(resultTemp);
     }

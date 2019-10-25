@@ -48,6 +48,8 @@ public class DBWrapper extends DB {
   private final String scopeStringRead;
   private final String scopeStringScan;
   private final String scopeStringUpdate;
+  private final String scopeStringInsertWithAttributes;
+  private final String scopeStringUpdateWithAttributes;
 
   public DBWrapper(final DB db, final Tracer tracer) {
     this.db = db;
@@ -61,6 +63,8 @@ public class DBWrapper extends DB {
     scopeStringRead = simple + "#read";
     scopeStringScan = simple + "#scan";
     scopeStringUpdate = simple + "#update";
+    scopeStringInsertWithAttributes = simple + "#insertWithAttributes";
+    scopeStringUpdateWithAttributes = simple + "#updateWithAttributes";
   }
 
   /**
@@ -140,6 +144,20 @@ public class DBWrapper extends DB {
     }
   }
 
+  public Status readWithAttributes(String table, String key, Set<String> fields,
+                     Map<String, ByteIterator> result,
+                     Map<String, String> attributes) {
+    try (final TraceScope span = tracer.newScope(scopeStringRead)) {
+      long ist = measurements.getIntendedtartTimeNs();
+      long st = System.nanoTime();
+      Status res = db.readWithAttributes(table, key, fields, result, attributes);
+      long en = System.nanoTime();
+      measure("READ_WITH_ATTRIBUTES", res, ist, st, en);
+      measurements.reportStatus("READ_WITH_ATTRIBUTES", res);
+      return res;
+    }
+  }
+
   /**
    * Perform a range scan for a set of records in the database.
    * Each field/value pair from the result will be stored in a HashMap.
@@ -203,6 +221,20 @@ public class DBWrapper extends DB {
     }
   }
 
+  public Status updateWithAttributes(String table, String key,
+                                    Map<String, ByteIterator> values,
+                                    Map<String, String> attributes) {
+    try (final TraceScope span = tracer.newScope(scopeStringUpdateWithAttributes)) {
+      long ist = measurements.getIntendedtartTimeNs();
+      long st = System.nanoTime();
+      Status res = db.updateWithAttributes(table, key, values, attributes);
+      long en = System.nanoTime();
+      measure("UPDATE_WITH_ATTRIBUTES", res, ist, st, en);
+      measurements.reportStatus("UPDATE_WITH_ATTRIBUTES", res);
+      return res;
+    }
+  }
+
   /**
    * Insert a record in the database. Any field/value pairs in the specified
    * values HashMap will be written into the record with the specified
@@ -222,6 +254,20 @@ public class DBWrapper extends DB {
       long en = System.nanoTime();
       measure("INSERT", res, ist, st, en);
       measurements.reportStatus("INSERT", res);
+      return res;
+    }
+  }
+
+  public Status insertWithAttributes(String table, String key,
+                                    Map<String, ByteIterator> values,
+                                    Map<String, String> attributes) {
+    try (final TraceScope span = tracer.newScope(scopeStringInsertWithAttributes)) {
+      long ist = measurements.getIntendedtartTimeNs();
+      long st = System.nanoTime();
+      Status res = db.insertWithAttributes(table, key, values, attributes);
+      long en = System.nanoTime();
+      measure("INSERT_WITH_ATTRIBUTES", res, ist, st, en);
+      measurements.reportStatus("INSERT_WITH_ATTRIBUTES", res);
       return res;
     }
   }

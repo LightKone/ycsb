@@ -88,6 +88,9 @@ public abstract class DB {
    */
   public abstract Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result);
 
+  public abstract Status readWithAttributes(String table, String key, Set<String> fields, 
+      Map<String, ByteIterator> result, Map<String, String> attributes);
+
   /**
    * Perform a range scan for a set of records in the database. Each field/value pair from the result will be stored
    * in a HashMap.
@@ -113,6 +116,9 @@ public abstract class DB {
    */
   public abstract Status update(String table, String key, Map<String, ByteIterator> values);
 
+  public abstract Status updateWithAttributes(String table, String key, Map<String, ByteIterator> values,
+                                            Map<String, String> attributes);
+
   /**
    * Insert a record in the database. Any field/value pairs in the specified values HashMap will be written into the
    * record with the specified record key.
@@ -123,6 +129,9 @@ public abstract class DB {
    * @return The result of the operation.
    */
   public abstract Status insert(String table, String key, Map<String, ByteIterator> values);
+
+  public abstract Status insertWithAttributes(String table, String key, Map<String, ByteIterator> values,
+                                            Map<String, String> attributes);
 
   /**
    * Delete a record from the database.

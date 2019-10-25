@@ -23,6 +23,10 @@
 
 recordcount=1000
 operationcount=1000
+
+attributecount=10
+attributedataset=dataset/yellow_tripdata_2019-06.csv
+
 workload=site.ycsb.workloads.CoreWorkload
 
 readallfields=true

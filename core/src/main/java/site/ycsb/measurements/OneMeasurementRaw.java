@@ -139,7 +139,11 @@ public class OneMeasurementRaw extends OneMeasurement {
   }
 
   @Override
-  public void exportMeasurements(MeasurementsExporter exporter)
+  public void measureOpCount() {
+  }
+
+  @Override
+  public void exportMeasurements(MeasurementsExporter exporter, long runtime)
       throws IOException {
     // Output raw data points first then print out a summary of percentiles to
     // stdout.

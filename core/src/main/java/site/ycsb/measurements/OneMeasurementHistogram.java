@@ -118,7 +118,11 @@ public class OneMeasurementHistogram extends OneMeasurement {
   }
 
   @Override
-  public void exportMeasurements(MeasurementsExporter exporter) throws IOException {
+  public void measureOpCount() {
+  }
+
+  @Override
+  public void exportMeasurements(MeasurementsExporter exporter, long runtime) throws IOException {
     double mean = totallatency / ((double) operations);
     double variance = totalsquaredlatency / ((double) operations) - (mean * mean);
     exporter.write(getName(), "Operations", operations);

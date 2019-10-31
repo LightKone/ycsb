@@ -147,15 +147,15 @@ public class ClientThread implements Runnable {
       System.exit(0);
     }
 
-    try {
-      measurements.setIntendedStartTimeNs(0);
-      db.cleanup();
-    } catch (DBException e) {
-      e.printStackTrace();
-      e.printStackTrace(System.out);
-    } finally {
-      completeLatch.countDown();
-    }
+    // try {
+    measurements.setIntendedStartTimeNs(0);
+    //   db.cleanup();
+    // } catch (DBException e) {
+    //   e.printStackTrace();
+    //   e.printStackTrace(System.out);
+    // } finally {
+    completeLatch.countDown();
+    // }
   }
 
   private static void sleepUntil(long deadline) {
@@ -182,5 +182,13 @@ public class ClientThread implements Runnable {
   int getOpsTodo() {
     int todo = opcount - opsdone;
     return todo < 0 ? 0 : todo;
+  }
+
+  public void cleanupDB() throws DBException {
+    db.cleanup();
+  }
+
+  public void endWarmup() {
+    db.endWarmup();
   }
 }

@@ -134,6 +134,7 @@ public final class Client {
    */
   public static final String MAX_EXECUTION_TIME = "maxexecutiontime";
 
+  public static final String WARMPUP_TIME = "warmuptime";
   /**
    * Whether or not this is the transaction phase (run) or not (load).
    */
@@ -272,7 +273,7 @@ public final class Client {
         exporter.write("MIN_SYS_LOAD_AVG", "Load", statusthread.getMinLoadAvg());
       }
 
-      Measurements.getMeasurements().exportMeasurements(exporter);
+      Measurements.getMeasurements().exportMeasurements(exporter, runtime);
     } finally {
       if (exporter != null) {
         exporter.close();
@@ -284,10 +285,20 @@ public final class Client {
   public static void main(String[] args) {
     Properties props = parseArguments(args);
 
+    synchronized (System.out) {
+      System.out.println("***************** properties *****************");
+      for (Enumeration e = props.propertyNames(); e.hasMoreElements();) {
+        String k = (String) e.nextElement();
+        System.out.println("\"" + k + "\"=\"" + props.getProperty(k) + "\"");
+      }
+      System.out.println("**********************************************");
+    }
+
     boolean status = Boolean.valueOf(props.getProperty(STATUS_PROPERTY, String.valueOf(false)));
     String label = props.getProperty(LABEL_PROPERTY, "");
 
     long maxExecutionTime = Integer.parseInt(props.getProperty(MAX_EXECUTION_TIME, "0"));
+    long warmupTime = Integer.parseInt(props.getProperty(WARMPUP_TIME, "0"));
 
     //get number of threads, target and db
     int threadcount = Integer.parseInt(props.getProperty(THREAD_COUNT_PROPERTY, "1"));
@@ -354,6 +365,11 @@ public final class Client {
         terminator.start();
       }
 
+      if (warmupTime > 0) {
+        Thread warmupThread = new WarmupPeriodThread(warmupTime, clients);
+        warmupThread.start();
+      }
+
       opsDone = 0;
 
       for (Map.Entry<Thread, ClientThread> entry : threads.entrySet()) {
@@ -404,6 +420,15 @@ public final class Client {
       System.exit(-1);
     }
 
+    for (ClientThread client : clients) {
+      try {
+        client.cleanupDB();
+      } catch (DBException e) {
+        e.printStackTrace();
+        e.printStackTrace(System.out);
+      }
+    }
+
     System.exit(0);
   }
 
@@ -418,6 +443,7 @@ public final class Client {
       int opcount;
       if (dotransactions) {
         opcount = Integer.parseInt(props.getProperty(OPERATION_COUNT_PROPERTY, "0"));
+        opcount = Integer.MAX_VALUE;
       } else {
         if (props.containsKey(INSERT_COUNT_PROPERTY)) {
           opcount = Integer.parseInt(props.getProperty(INSERT_COUNT_PROPERTY, "0"));

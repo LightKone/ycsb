@@ -236,6 +236,14 @@ public class CoreWorkload extends Workload {
    */
   public static final String READMODIFYWRITE_PROPORTION_PROPERTY_DEFAULT = "0.0";
 
+  public static final String QUERY_PROPORTION_PROPERTY = "queryproportion";
+
+  public static final String QUERY_PROPORTION_PROPERTY_DEFAULT = "0.95";
+
+  public static final String QUERY_RESULT_COUNT_PROPERTY = "queryresultcount";
+
+  public static final String QUERY_RESULT_COUNT_PROPERTY_DEFAULT = "1";
+
   /**
    * The name of the property for the the distribution of requests across the keyspace. Options are
    * "uniform", "zipfian" and "latest"
@@ -416,7 +424,7 @@ public class CoreWorkload extends Workload {
     String attributedataset = p.getProperty(
         Client.ATTRIBUTE_DATASET_PROPERTY, Client.DEFAULT_ATTRIBUTE_DATASET);
 
-    attributeGenerator = new AttributeGenerator(attributedataset);
+    attributeGenerator = new AttributeGenerator(attributedataset, (int) recordcount, p);
 
     String requestdistrib =
         p.getProperty(REQUEST_DISTRIBUTION_PROPERTY, REQUEST_DISTRIBUTION_PROPERTY_DEFAULT);
@@ -610,6 +618,7 @@ public class CoreWorkload extends Workload {
     for (int i=0; i<attributeList.size() && i < attributecount; i++) {
       attributes.putAll(attributeList.get(i));
     }
+    attributeGenerator.tripDistanceInsert(dbkey, Double.parseDouble(attributes.get("f-trip_distance")));
     Status status;
     int numOfRetries = 0;
     do {
@@ -666,6 +675,9 @@ public class CoreWorkload extends Workload {
       break;
     case "SCAN":
       doTransactionScan(db);
+      break;
+    case "QUERY":
+      doTransactionQuery(db);
       break;
     default:
       doTransactionReadModifyWrite(db);
@@ -777,12 +789,8 @@ public class CoreWorkload extends Workload {
     long st = System.nanoTime();
     db.readWithAttributes(table, keyname, fields, cells, attributes);
 
-    System.out.println("before: " + Arrays.asList(attributes));
     List<Map<String, String>> attributeList = attributeGenerator.nextValue();
-    for (int i=0; i<attributeList.size() && i < attributecount; i++) {
-      attributeList.get(i).forEach((k, v) -> {System.out.println(k + " " + v); attributes.replace(k, v); });
-    }
-    System.out.println("after: " + Arrays.asList(attributes));
+    attributeGenerator.tripDistanceInsert(keyname, Double.parseDouble(attributes.get("f-trip_distance")));
     db.updateWithAttributes(table, keyname, values, attributes);
 
     long en = System.nanoTime();
@@ -817,6 +825,16 @@ public class CoreWorkload extends Workload {
     db.scan(table, startkeyname, len, fields, new Vector<HashMap<String, ByteIterator>>());
   }
 
+  public void doTransactionQuery(DB db) {
+    String[] attributeName = new String[1];
+    String[] attributeType = new String[1];
+    java.lang.Object[] lbound = new java.lang.Object[1];
+    java.lang.Object[] ubound = new java.lang.Object[1];
+    long[] en = new long[2];
+    attributeGenerator.nextQuery(attributeName, attributeType, lbound, ubound);
+    db.query(attributeName, attributeType, lbound, ubound, en);
+  }
+
   public void doTransactionUpdate(DB db) {
     // choose a random key
     long keynum = nextKeynum();
@@ -834,7 +852,10 @@ public class CoreWorkload extends Workload {
     }
     Map<String, String> attributes = new HashMap<String, String>();
     List<Map<String, String>> attributeList = attributeGenerator.nextValue();
-    attributes.putAll(attributeList.get(4));
+    for (int i=0; i<attributeList.size() && i < attributecount; i++) {
+      attributes.putAll(attributeList.get(i));
+    }
+    attributeGenerator.tripDistanceInsert(keyname, Double.parseDouble(attributes.get("f-trip_distance")));
     db.updateWithAttributes(table, keyname, values, attributes);
   }
 
@@ -852,6 +873,7 @@ public class CoreWorkload extends Workload {
       for (int i=0; i<attributeList.size() && i < attributecount; i++) {
         attributes.putAll(attributeList.get(i));
       }
+      attributeGenerator.tripDistanceInsert(dbkey, Double.parseDouble(attributes.get("f-trip_distance")));
 
       db.insertWithAttributes(table, dbkey, values, attributes);
     } finally {
@@ -883,6 +905,8 @@ public class CoreWorkload extends Workload {
         p.getProperty(SCAN_PROPORTION_PROPERTY, SCAN_PROPORTION_PROPERTY_DEFAULT));
     final double readmodifywriteproportion = Double.parseDouble(p.getProperty(
         READMODIFYWRITE_PROPORTION_PROPERTY, READMODIFYWRITE_PROPORTION_PROPERTY_DEFAULT));
+    final double queryproportion = Double.parseDouble(
+        p.getProperty(QUERY_PROPORTION_PROPERTY, QUERY_PROPORTION_PROPERTY_DEFAULT));
 
     final DiscreteGenerator operationchooser = new DiscreteGenerator();
     if (readproportion > 0) {
@@ -903,6 +927,9 @@ public class CoreWorkload extends Workload {
 
     if (readmodifywriteproportion > 0) {
       operationchooser.addValue(readmodifywriteproportion, "READMODIFYWRITE");
+    }
+    if (queryproportion > 0) {
+      operationchooser.addValue(queryproportion, "QUERY");
     }
     return operationchooser;
   }

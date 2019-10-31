@@ -53,13 +53,17 @@ public class TwoInOneMeasurement extends OneMeasurement {
     thing2.measure(latencyInMicros);
   }
 
+  @Override
+  public void measureOpCount() {
+  }
+
   /**
    * This is called from a main thread, on orderly termination.
    */
   @Override
-  public void exportMeasurements(MeasurementsExporter exporter) throws IOException {
-    thing1.exportMeasurements(exporter);
-    thing2.exportMeasurements(exporter);
+  public void exportMeasurements(MeasurementsExporter exporter, long runtime) throws IOException {
+    thing1.exportMeasurements(exporter, runtime);
+    thing2.exportMeasurements(exporter, runtime);
   }
 
   /**

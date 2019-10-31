@@ -28,6 +28,22 @@ LICENSE file.
   <packaging>jar</packaging>
 
   <dependencies>
+<dependency>
+  <groupId>io.grpc</groupId>
+  <artifactId>grpc-netty-shaded</artifactId>
+  <version>1.24.0</version>
+</dependency>
+<dependency>
+  <groupId>io.grpc</groupId>
+  <artifactId>grpc-protobuf</artifactId>
+  <version>1.24.0</version>
+</dependency>
+<dependency>
+  <groupId>io.grpc</groupId>
+  <artifactId>grpc-stub</artifactId>
+  <version>1.24.0</version>
+</dependency>
+
     <dependency>
 	<groupId>com.amazonaws</groupId>
 	<artifactId>aws-java-sdk-s3</artifactId>
@@ -40,5 +56,13 @@ LICENSE file.
             <version>${project.version}</version>
             <scope>provided</scope>
     </dependency>
+
+    <dependency>
+    <groupId>proteus-client</groupId>
+    <artifactId>proteus-client</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>${project.basedir}/src/main/resources/proteusclient.jar</systemPath>
+</dependency>
    </dependencies>
 </project>

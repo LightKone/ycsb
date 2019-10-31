@@ -32,6 +32,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import org.HdrHistogram.HistogramLogReader;
 /**
  * Take measurements and maintain a HdrHistogram of a given metric, such as READ LATENCY.
  *
@@ -41,9 +44,11 @@ public class OneMeasurementHdrHistogram extends OneMeasurement {
   // we need one log per measurement histogram
   private final PrintStream log;
   private final HistogramLogWriter histogramLogWriter;
-
+  private String hdrOutputFilename = null;
   private final Recorder histogram;
+  private final Recorder opCountHistogram;
   private Histogram totalHistogram;
+  private Histogram opCountTotalHistogram;
 
   /**
    * The name of the property for deciding what percentile values to output.
@@ -77,7 +82,7 @@ public class OneMeasurementHdrHistogram extends OneMeasurement {
       histogramLogWriter = null;
     } else {
       try {
-        final String hdrOutputFilename = props.getProperty("hdrhistogram.output.path", "") + name + ".hdr";
+        this.hdrOutputFilename = props.getProperty("hdrhistogram.output.path", "") + name + ".hdr";
         log = new PrintStream(new FileOutputStream(hdrOutputFilename), false);
       } catch (FileNotFoundException e) {
         throw new RuntimeException("Failed to open hdr histogram output file", e);
@@ -91,6 +96,7 @@ public class OneMeasurementHdrHistogram extends OneMeasurement {
       histogramLogWriter.outputLegend();
     }
     histogram = new Recorder(3);
+    opCountHistogram = new Recorder(1);
   }
 
   /**
@@ -101,19 +107,27 @@ public class OneMeasurementHdrHistogram extends OneMeasurement {
     histogram.recordValue(latencyInMicros);
   }
 
+  public synchronized void measureOpCount() {
+    opCountHistogram.recordValue(0);
+  }
+
   /**
    * This is called from a main thread, on orderly termination.
    */
   @Override
-  public void exportMeasurements(MeasurementsExporter exporter) throws IOException {
+  public void exportMeasurements(MeasurementsExporter exporter, long runtime) throws IOException {
     // accumulate the last interval which was not caught by status thread
     Histogram intervalHistogram = getIntervalHistogramAndAccumulate();
+    getOpCountHistogramAndAccumulate();
     if (histogramLogWriter != null) {
       histogramLogWriter.outputIntervalHistogram(intervalHistogram);
       // we can close now
       log.close();
+      parseLog();
     }
-    exporter.write(getName(), "Operations", totalHistogram.getTotalCount());
+    exporter.write(getName(), "Operations", opCountTotalHistogram.getTotalCount());
+    double throughput = 1000.0 * (opCountTotalHistogram.getTotalCount()) / (runtime);
+    exporter.write(getName(), "Throughput(ops/sec)", throughput);
     exporter.write(getName(), "AverageLatency(us)", totalHistogram.getMean());
     exporter.write(getName(), "MinLatency(us)", totalHistogram.getMinValue());
     exporter.write(getName(), "MaxLatency(us)", totalHistogram.getMaxValue());
@@ -175,6 +189,16 @@ public class OneMeasurementHdrHistogram extends OneMeasurement {
     return intervalHistogram;
   }
 
+  private void getOpCountHistogramAndAccumulate() {
+    Histogram intervalHistogram = opCountHistogram.getIntervalHistogram();
+    // add this to the total time histogram.
+    if (opCountTotalHistogram == null) {
+      opCountTotalHistogram = intervalHistogram;
+    } else {
+      opCountTotalHistogram.add(intervalHistogram);
+    }
+  }
+
   /**
    * Helper method to parse the given percentile value string.
    *
@@ -219,6 +243,35 @@ public class OneMeasurementHdrHistogram extends OneMeasurement {
       }
     } else {
       return i.toString();
+    }
+  }
+
+  public void parseLog() {
+    try {
+      HistogramLogReader reader = new HistogramLogReader(hdrOutputFilename);
+      BufferedWriter writer = new BufferedWriter(new FileWriter(hdrOutputFilename+".parsed"));
+      try {
+        Histogram hgram = (Histogram) reader.nextIntervalHistogram();
+        long start = hgram.getStartTimeStamp();
+        while (hgram != null) {
+          if (hgram.getValueAtPercentile(95) !=0 && hgram.getValueAtPercentile(99) != 0 && hgram.getTotalCount()>0) {
+            String parsedLine = String.format("%d, %f, %d, %d\n",
+                (hgram.getEndTimeStamp() - start) / 1000,
+                hgram.getMean(),
+                hgram.getValueAtPercentile(95),
+                hgram.getValueAtPercentile(99));
+            writer.write(parsedLine);
+          }
+          hgram = (Histogram) reader.nextIntervalHistogram();
+        }
+        writer.close();
+      } catch (FileNotFoundException e) {
+        e.printStackTrace(System.out);
+        System.exit(0);
+      }
+    } catch (java.io.IOException e) {
+      e.printStackTrace(System.out);
+      System.exit(0);
     }
   }
 }

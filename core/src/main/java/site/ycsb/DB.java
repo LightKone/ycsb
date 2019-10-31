@@ -141,4 +141,9 @@ public abstract class DB {
    * @return The result of the operation.
    */
   public abstract Status delete(String table, String key);
+
+  public abstract Status query(String []attributeName, String []attributeType,  java.lang.Object []lbound,
+                              java.lang.Object []ubound, long []en);
+
+  public abstract void endWarmup();
 }

@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.CountDownLatch;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.*;
@@ -34,6 +35,8 @@ import site.ycsb.ByteIterator;
 import site.ycsb.DB;
 import site.ycsb.DBException;
 import site.ycsb.Status;
+
+import site.ycsb.generator.Counter;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.*;
@@ -52,6 +55,9 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.SSECustomerKey;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.S3ClientOptions;
+
+import io.grpc.stub.StreamObserver;
+import io.grpc.proteusclient.*;
 /**
  * S3 Storage client for YCSB framework.
  *
@@ -74,27 +80,40 @@ import com.amazonaws.services.s3.S3ClientOptions;
  */
 public class S3Client extends DB {
 
+  private static final String TABLENAME_PROPERTY = "table";
+  private static final String TABLENAME_PROPERTY_DEFAULT = "usertable";
+
   private static AmazonS3Client s3Client;
   private static String sse;
   private static SSECustomerKey ssecKey;
   private static final AtomicInteger INIT_COUNT = new AtomicInteger(0);
-
+  private static ProteusClient proteusClient;
+  private static String queryResultCount;
+  private boolean dotransactions;
   /**
   * Cleanup any state for this storage.
   * Called once per S3 instance;
   */
   @Override
   public void cleanup() throws DBException {
-    if (INIT_COUNT.decrementAndGet() == 0) {
-      try {
-        s3Client.shutdown();
-        System.out.println("The client is shutdown successfully");
-      } catch (Exception e){
-        System.err.println("Could not shutdown the S3Client: "+e.toString());
-        e.printStackTrace();
-      } finally {
-        if (s3Client != null){
-          s3Client = null;
+    try {
+      if (dotransactions) {
+        proteusClient.shutdown();
+      }
+    } catch (InterruptedException e) {
+      System.out.println(e.getMessage());
+    } finally {
+      if (INIT_COUNT.decrementAndGet() == 0) {
+        try {
+          s3Client.shutdown();
+          System.out.println("The client is shutdown successfully");
+        } catch (Exception e){
+          System.err.println("Could not shutdown the S3Client: "+e.toString());
+          e.printStackTrace();
+        } finally {
+          if (s3Client != null){
+            s3Client = null;
+          }
         }
       }
     }
@@ -129,6 +148,10 @@ public class S3Client extends DB {
     final int count = INIT_COUNT.incrementAndGet();
     synchronized (S3Client.class){
       Properties propsCL = getProperties();
+      dotransactions = Boolean.valueOf(propsCL.getProperty("dotransactions", String.valueOf(true)));
+      String proteusHost;
+      int proteusPort;
+      String table = propsCL.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
       int recordcount = Integer.parseInt(
           propsCL.getProperty("recordcount"));
       int operationcount = Integer.parseInt(
@@ -157,15 +180,15 @@ public class S3Client extends DB {
           System.out.println("Reusing the same client");
           return;
         }
+        if (proteusClient != null) {
+          System.out.println("Reusing the same Proteus client");
+          return;
+        }
         try {
           accessKeyId = propsCL.getProperty("s3.accessKeyId");
-          System.out.println(accessKeyId);
           secretKey = propsCL.getProperty("s3.secretKey");
-          System.out.println(secretKey);
           endPoint = propsCL.getProperty("s3.endPoint", "s3.amazonaws.com");
-          System.out.println(endPoint);
           region = propsCL.getProperty("s3.region", "us-east-1");
-          System.out.println(region);
           maxErrorRetry = propsCL.getProperty("s3.maxErrorRetry", "15");
           maxConnections = propsCL.getProperty("s3.maxConnections");
           protocol = propsCL.getProperty("s3.protocol", "HTTPS");
@@ -193,11 +216,28 @@ public class S3Client extends DB {
           final S3ClientOptions options = new S3ClientOptions();
           options.setPathStyleAccess(true);
           s3Client.setS3ClientOptions(options);
+          s3Client.createBucket(table);
           System.out.println("Connection successfully initialized");
         } catch (Exception e){
           System.err.println("Could not connect to S3 storage: "+ e.toString());
           e.printStackTrace();
           throw new DBException(e);
+        }
+        if (dotransactions) {
+          try {
+            System.out.println("Inizializing the Proteus connection");
+            proteusHost = propsCL.getProperty("proteus.host");
+            proteusPort = Integer.parseInt(
+                propsCL.getProperty("proteus.port"));
+            proteusHost = propsCL.getProperty("proteus.host");
+            proteusClient = new ProteusClient(proteusHost, proteusPort);
+            queryResultCount = propsCL.getProperty("queryresultcount");
+            System.out.println("Connection successfully initialized");
+          } catch (Exception e){
+            System.err.println("Could not connect to Proteus: "+ e.toString());
+            e.printStackTrace();
+            throw new DBException(e);
+          }
         }
       } else {
         System.err.println(
@@ -334,6 +374,10 @@ public class S3Client extends DB {
                                   String sseLocal, SSECustomerKey ssecLocal) {
     int totalSize = 0;
     int fieldCount = values.size(); //number of fields to concatenate
+    // attributes.entrySet().forEach(entry->{
+    //     System.out.printf(entry.getKey() + " " + entry.getValue());
+    //   });
+    // System.out.println();
     // getting the first field in the values
     Object keyToSearch = values.keySet().toArray()[0];
     // getting the content of just one field
@@ -519,5 +563,83 @@ public class S3Client extends DB {
       result.add(resultTemp);
     }
     return Status.OK;
+  }
+
+  public Status query(String []attributeName, String []attributeType,  java.lang.Object []lbound,
+                              java.lang.Object []ubound, long []en) {
+    // for(int i=0; i<attributeName.length; i++) {
+    //   System.out.printf(attributeName[i] +", ");
+    //   System.out.printf(attributeType[i] +", ");
+    //   System.out.printf((java.lang.String) lbound[i] +", ");
+    //   System.out.printf((java.lang.String) ubound[i]);
+    // }
+    // System.out.println();
+    final Counter resultCount = new Counter();
+    try {
+      final CountDownLatch finishLatch = new CountDownLatch(1);
+      final StreamObserver<ResponseStreamRecord> requestObserver = new StreamObserver<ResponseStreamRecord>() {
+        @Override
+        public void onNext(ResponseStreamRecord record) {
+          resultCount.inc();
+        }
+        @Override
+        public void onError(Throwable t) {
+          System.err.println("Query failed " + t.getMessage());
+          t.printStackTrace();
+          finishLatch.countDown();
+        }
+        @Override
+        public void onCompleted() {
+          en[0] = System.nanoTime();
+          finishLatch.countDown();
+        }
+      };
+      QueryPredicate[] queryPredicates = new QueryPredicate[attributeName.length];
+      if (attributeName.length == attributeType.length && attributeName.length == lbound.length &&
+          attributeName.length == ubound.length) {
+        for (int i=0; i<attributeName.length; i++) {
+          AttributeValue lb;
+          AttributeValue ub;
+          Attribute.AttributeType attrType;
+          switch (attributeType[i]) {
+          case "S3TAGSTR":
+            attrType = Attribute.AttributeType.S3TAGSTR;
+            lb = new AttributeValue((java.lang.String) lbound[i]);
+            ub = new AttributeValue((java.lang.String) ubound[i]);
+            break;
+          case "S3TAGINT":
+            attrType = Attribute.AttributeType.S3TAGINT;
+            lb = new AttributeValue(Long.parseLong((java.lang.String) lbound[i]));
+            ub = new AttributeValue(Long.parseLong((java.lang.String) ubound[i]));
+            break;
+          case "S3TAGFLT":
+            attrType = Attribute.AttributeType.S3TAGFLT;
+            lb = new AttributeValue(Double.parseDouble((java.lang.String) lbound[i]));
+            ub = new AttributeValue(Double.parseDouble((java.lang.String) ubound[i]));
+            break;
+          default:
+            System.err.println("Error in query parameters");
+            return Status.ERROR;
+          }
+          queryPredicates[0] = new QueryPredicate(attributeName[i], attrType, lb, ub);
+        }
+        Map<String, String> queryMetadata = new HashMap<String, String>();
+        queryMetadata.put("maxResponseCount", queryResultCount);
+        proteusClient.query(queryPredicates, queryMetadata, finishLatch, requestObserver);
+        finishLatch.await();
+      } else {
+        System.err.println("Query parameters are not of equal length");
+        return Status.ERROR;
+      }
+    } catch (InterruptedException e) {
+      System.err.println("Query failed "+ e.getMessage());
+      e.printStackTrace();
+      return Status.ERROR;
+    }
+    return Status.OK;
+  }
+
+  @Override
+  public void endWarmup() {
   }
 }

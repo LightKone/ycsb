@@ -552,7 +552,30 @@ public class TestTimeSeriesWorkload {
       // TODO Auto-generated method stub
       return Status.OK;
     }
-    
+    @Override
+    public Status query(String []attributeName, String []attributeType,  java.lang.Object []lbound,
+                        java.lang.Object []ubound, long []en) {
+      return Status.OK;
+    }
+
+    @Override
+    public Status insertWithAttributes(String table, String key, Map<String, ByteIterator> values,
+                                            Map<String, String> attributes) {
+      return Status.OK;
+    }
+
+    @Override
+    public Status updateWithAttributes(String table, String key, Map<String, ByteIterator> values,
+                                            Map<String, String> attributes) {
+      return Status.OK;
+    }
+
+    @Override
+    public Status readWithAttributes(String table, String key, Set<String> fields,
+      Map<String, ByteIterator> result, Map<String, String> attributes) {
+      return Status.OK;
+    }
+
     public void dumpStdout() {
       for (int i = 0; i < keys.size(); i++) {
         System.out.print("[" + i + "] Key: " + keys.get(i) + " Values: {");
@@ -572,6 +595,9 @@ public class TestTimeSeriesWorkload {
         }
         System.out.println("}");
       }
+    }
+    @Override
+    public void endWarmup() {
     }
   }
 }

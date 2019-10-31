@@ -176,4 +176,13 @@ public class GoodBadUglyDB extends DB {
     delay();
     return Status.OK;
   }
+
+  public Status query(String []attributeName, String []attributeType,  java.lang.Object []lbound,
+                              java.lang.Object []ubound, long []en) {
+    return Status.NOT_IMPLEMENTED;
+  }
+
+  @Override
+  public void endWarmup() {
+  }
 }

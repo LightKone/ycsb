@@ -41,6 +41,8 @@ public class DBWrapper extends DB {
 
   private static final String LATENCY_TRACKED_ERRORS_PROPERTY = "latencytrackederrors";
 
+  private static final String WARMPUP_TIME = "warmuptime";
+
   private final String scopeStringCleanup;
   private final String scopeStringDelete;
   private final String scopeStringInit;
@@ -48,8 +50,12 @@ public class DBWrapper extends DB {
   private final String scopeStringRead;
   private final String scopeStringScan;
   private final String scopeStringUpdate;
+  private final String scopeStringReadWithAttributes;
   private final String scopeStringInsertWithAttributes;
   private final String scopeStringUpdateWithAttributes;
+  private final String scopeStringQuery;
+
+  private boolean warmup = false;
 
   public DBWrapper(final DB db, final Tracer tracer) {
     this.db = db;
@@ -64,7 +70,9 @@ public class DBWrapper extends DB {
     scopeStringScan = simple + "#scan";
     scopeStringUpdate = simple + "#update";
     scopeStringInsertWithAttributes = simple + "#insertWithAttributes";
+    scopeStringReadWithAttributes = simple + "#readWithAttributes";
     scopeStringUpdateWithAttributes = simple + "#updateWithAttributes";
+    scopeStringQuery = simple + "#query";
   }
 
   /**
@@ -79,6 +87,10 @@ public class DBWrapper extends DB {
    */
   public Properties getProperties() {
     return db.getProperties();
+  }
+
+  public synchronized void endWarmup() {
+    warmup = false;
   }
 
   /**
@@ -99,6 +111,10 @@ public class DBWrapper extends DB {
           this.latencyTrackedErrors = new HashSet<String>(Arrays.asList(
               latencyTrackedErrorsProperty.split(",")));
         }
+      }
+      long warmupTime = Integer.parseInt(getProperties().getProperty(WARMPUP_TIME, "0"));
+      if (warmupTime > 0) {
+        warmup = true;
       }
 
       System.err.println("DBWrapper: report latency for each error is " +
@@ -138,8 +154,11 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.read(table, key, fields, result);
       long en = System.nanoTime();
-      measure("READ", res, ist, st, en);
-      measurements.reportStatus("READ", res);
+      measureOpCount("READ", res);
+      if (!warmup) {
+        measure("READ", res, ist, st, en);
+        measurements.reportStatus("READ", res);
+      }
       return res;
     }
   }
@@ -147,13 +166,16 @@ public class DBWrapper extends DB {
   public Status readWithAttributes(String table, String key, Set<String> fields,
                      Map<String, ByteIterator> result,
                      Map<String, String> attributes) {
-    try (final TraceScope span = tracer.newScope(scopeStringRead)) {
+    try (final TraceScope span = tracer.newScope(scopeStringReadWithAttributes)) {
       long ist = measurements.getIntendedtartTimeNs();
       long st = System.nanoTime();
       Status res = db.readWithAttributes(table, key, fields, result, attributes);
       long en = System.nanoTime();
-      measure("READ_WITH_ATTRIBUTES", res, ist, st, en);
-      measurements.reportStatus("READ_WITH_ATTRIBUTES", res);
+      measureOpCount("READ_WITH_ATTRIBUTES", res);
+      if (!warmup) {
+        measure("READ_WITH_ATTRIBUTES", res, ist, st, en);
+        measurements.reportStatus("READ_WITH_ATTRIBUTES", res);
+      }
       return res;
     }
   }
@@ -176,8 +198,11 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.scan(table, startkey, recordcount, fields, result);
       long en = System.nanoTime();
-      measure("SCAN", res, ist, st, en);
-      measurements.reportStatus("SCAN", res);
+      measureOpCount("SCAN", res);
+      if (!warmup) {
+        measure("SCAN", res, ist, st, en);
+        measurements.reportStatus("SCAN", res);
+      }
       return res;
     }
   }
@@ -199,6 +224,19 @@ public class DBWrapper extends DB {
         (int) ((endTimeNanos - intendedStartTimeNanos) / 1000));
   }
 
+  private void measureOpCount(String op, Status result) {
+    String measurementName = op;
+    if (result == null || !result.isOk()) {
+      if (this.reportLatencyForEachError ||
+          this.latencyTrackedErrors.contains(result.getName())) {
+        measurementName = op + "-" + result.getName();
+      } else {
+        measurementName = op + "-FAILED";
+      }
+    }
+    measurements.measureOpCount(measurementName);
+  }
+
   /**
    * Update a record in the database. Any field/value pairs in the specified values HashMap will be written into the
    * record with the specified record key, overwriting any existing values with the same field name.
@@ -215,8 +253,11 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.update(table, key, values);
       long en = System.nanoTime();
-      measure("UPDATE", res, ist, st, en);
-      measurements.reportStatus("UPDATE", res);
+      measureOpCount("UPDATE", res);
+      if (!warmup) {
+        measure("UPDATE", res, ist, st, en);
+        measurements.reportStatus("UPDATE", res);
+      }
       return res;
     }
   }
@@ -229,8 +270,11 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.updateWithAttributes(table, key, values, attributes);
       long en = System.nanoTime();
-      measure("UPDATE_WITH_ATTRIBUTES", res, ist, st, en);
-      measurements.reportStatus("UPDATE_WITH_ATTRIBUTES", res);
+      measureOpCount("UPDATE_WITH_ATTRIBUTES", res);
+      if (!warmup) {
+        measure("UPDATE_WITH_ATTRIBUTES", res, ist, st, en);
+        measurements.reportStatus("UPDATE_WITH_ATTRIBUTES", res);
+      }
       return res;
     }
   }
@@ -252,8 +296,11 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.insert(table, key, values);
       long en = System.nanoTime();
-      measure("INSERT", res, ist, st, en);
-      measurements.reportStatus("INSERT", res);
+      measureOpCount("INSERT", res);
+      if (!warmup) {
+        measure("INSERT", res, ist, st, en);
+        measurements.reportStatus("INSERT", res);
+      }
       return res;
     }
   }
@@ -266,8 +313,11 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.insertWithAttributes(table, key, values, attributes);
       long en = System.nanoTime();
-      measure("INSERT_WITH_ATTRIBUTES", res, ist, st, en);
-      measurements.reportStatus("INSERT_WITH_ATTRIBUTES", res);
+      measureOpCount("INSERT_WITH_ATTRIBUTES", res);
+      if (!warmup) {
+        measure("INSERT_WITH_ATTRIBUTES", res, ist, st, en);
+        measurements.reportStatus("INSERT_WITH_ATTRIBUTES", res);
+      }
       return res;
     }
   }
@@ -285,8 +335,27 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.delete(table, key);
       long en = System.nanoTime();
-      measure("DELETE", res, ist, st, en);
-      measurements.reportStatus("DELETE", res);
+      measureOpCount("DELETE", res);
+      if (!warmup) {
+        measure("DELETE", res, ist, st, en);
+        measurements.reportStatus("DELETE", res);
+      }
+      return res;
+    }
+  }
+
+  public Status query(String []attributeName, String []attributeType,  java.lang.Object []lbound,
+                              java.lang.Object []ubound, long []en) {
+    try (final TraceScope span = tracer.newScope(scopeStringQuery)) {
+      long ist = measurements.getIntendedtartTimeNs();
+      long st = System.nanoTime();
+      Status res = db.query(attributeName, attributeType, lbound, ubound, en);
+      //long en = System.nanoTime();
+      measureOpCount("QUERY", res);
+      if (!warmup) {
+        measure("QUERY", res, ist, st, en[0]);
+        measurements.reportStatus("QUERY", res);
+      }
       return res;
     }
   }

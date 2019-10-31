@@ -47,6 +47,8 @@ public abstract class OneMeasurement {
 
   public abstract void measure(int latency);
 
+  public abstract void measureOpCount();
+
   public abstract String getSummary();
 
   /**
@@ -72,7 +74,7 @@ public abstract class OneMeasurement {
    * @param exporter Exporter representing the type of format to write to.
    * @throws IOException Thrown if the export failed.
    */
-  public abstract void exportMeasurements(MeasurementsExporter exporter) throws IOException;
+  public abstract void exportMeasurements(MeasurementsExporter exporter, long runtime) throws IOException;
 
   protected final void exportStatusCounts(MeasurementsExporter exporter) throws IOException {
     for (Map.Entry<Status, AtomicInteger> entry : returncodes.entrySet()) {

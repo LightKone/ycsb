@@ -48,7 +48,7 @@ public class TestMeasurementsExporter {
             int rnd = zipfian.nextValue().intValue();
             mm.measure("UPDATE", rnd);
         }
-        mm.exportMeasurements(export);
+        mm.exportMeasurements(export, 0);
         export.close();
 
         ObjectMapper mapper = new ObjectMapper();

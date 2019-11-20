@@ -23,7 +23,7 @@
 #   Request distribution: zipfian
 
 recordcount=1000
-operationcount=100
+operationcount=0
 
 attributecount=5
 attributedataset=dataset/yellow_tripdata_2019-06.csv

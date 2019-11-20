@@ -443,7 +443,6 @@ public final class Client {
       int opcount;
       if (dotransactions) {
         opcount = Integer.parseInt(props.getProperty(OPERATION_COUNT_PROPERTY, "0"));
-        opcount = Integer.MAX_VALUE;
       } else {
         if (props.containsKey(INSERT_COUNT_PROPERTY)) {
           opcount = Integer.parseInt(props.getProperty(INSERT_COUNT_PROPERTY, "0"));
@@ -451,10 +450,10 @@ public final class Client {
           opcount = Integer.parseInt(props.getProperty(RECORD_COUNT_PROPERTY, DEFAULT_RECORD_COUNT));
         }
       }
-      if (threadcount > opcount){
-        threadcount = opcount;
-        System.out.println("Warning: the threadcount is bigger than recordcount, the threadcount will be recordcount!");
-      }
+      // if (threadcount > opcount){
+      //   threadcount = opcount;
+      //System.out.println("Warning: the threadcount is bigger than recordcount, the threadcount will be recordcount!");
+      // }
       for (int threadid = 0; threadid < threadcount; threadid++) {
         DB db;
         try {

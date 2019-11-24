@@ -72,7 +72,6 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
   private int recordCount;
   private List<Map<String, String>> currentDatasetEntry;
   private BufferedReader reader;
-  private DatasetEntry[] buffer;
   private Map<String, Double> tripDistanceValues;
   protected NumberGenerator lBoundChooser;
   protected NumberGenerator rangeChooser;
@@ -91,7 +90,6 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
    */
   public AttributeGenerator(String filename, int recordCount, Properties p) {
     this.filename = filename;
-    this.buffer = new DatasetEntry[recordCount];
     this.tripDistanceValues = new HashMap<String, Double>();
     pointQueryValueGenerator = new UniformLongGenerator(0, recordCount-1);
     int cachesize =
@@ -168,7 +166,6 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
     reloadFile();
     try {
       reader.readLine();
-      preload();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -215,12 +212,8 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
    */
   @Override
   public synchronized List<Map<String, String>> nextValue() {
-    if (current < buffer.length) {
-      return buffer[current++].get();
-    } else {
-      currentDatasetEntry = next();
-      return currentDatasetEntry;
-    }
+    currentDatasetEntry = next();
+    return currentDatasetEntry;
   }
 
 
@@ -230,7 +223,6 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
       String [] data = line.split(",");
       DatasetEntry userMetadata = new DatasetEntry();
       double tripDistanceVal = userMetadata.set(data);
-      //updateFrequencies(tripDistanceVal);
       return userMetadata.get();
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -242,11 +234,7 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
    */
   @Override
   public List<Map<String , String>> lastValue() {
-    if (current < buffer.length) {
-      return buffer[current].get();
-    } else {
-      return currentDatasetEntry;
-    }
+    return currentDatasetEntry;
   }
 
   private String buildKeyName(long keynum) {
@@ -260,15 +248,6 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
       prekey += '0';
     }
     return prekey + value;
-  }
-
-  private void preload() {
-    for(int i=0; i<buffer.length; i++) {
-      buffer[i] = new DatasetEntry(next());
-      int keynum = keysequence.nextValue().intValue();
-      String dbkey = buildKeyName(keynum);
-      tripDistanceInsert(dbkey, buffer[i].getTripDistance());
-    }
   }
 
   /**

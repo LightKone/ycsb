@@ -618,7 +618,7 @@ public class CoreWorkload extends Workload {
     for (int i=0; i<attributeList.size() && i < attributecount; i++) {
       attributes.putAll(attributeList.get(i));
     }
-    attributeGenerator.tripDistanceInsert(dbkey, Double.parseDouble(attributes.get("f-trip_distance")));
+    attributeGenerator.tripDistanceInsert(Double.parseDouble(attributes.get("f-trip_distance")));
     Status status;
     int numOfRetries = 0;
     do {
@@ -790,7 +790,7 @@ public class CoreWorkload extends Workload {
     db.readWithAttributes(table, keyname, fields, cells, attributes);
 
     List<Map<String, String>> attributeList = attributeGenerator.nextValue();
-    attributeGenerator.tripDistanceInsert(keyname, Double.parseDouble(attributes.get("f-trip_distance")));
+    attributeGenerator.tripDistanceInsert(Double.parseDouble(attributes.get("f-trip_distance")));
     db.updateWithAttributes(table, keyname, values, attributes);
 
     long en = System.nanoTime();
@@ -855,7 +855,7 @@ public class CoreWorkload extends Workload {
     for (int i=0; i<attributeList.size() && i < attributecount; i++) {
       attributes.putAll(attributeList.get(i));
     }
-    attributeGenerator.tripDistanceInsert(keyname, Double.parseDouble(attributes.get("f-trip_distance")));
+    attributeGenerator.tripDistanceInsert(Double.parseDouble(attributes.get("f-trip_distance")));
     db.updateWithAttributes(table, keyname, values, attributes);
   }
 
@@ -867,14 +867,13 @@ public class CoreWorkload extends Workload {
       String dbkey = buildKeyName(keynum);
 
       HashMap<String, ByteIterator> values = buildValues(dbkey);
-      
+
       List<Map<String, String>> attributeList = attributeGenerator.nextValue();
       Map<String, String> attributes = new HashMap<String, String>();
       for (int i=0; i<attributeList.size() && i < attributecount; i++) {
         attributes.putAll(attributeList.get(i));
       }
-      attributeGenerator.tripDistanceInsert(dbkey, Double.parseDouble(attributes.get("f-trip_distance")));
-
+      attributeGenerator.tripDistanceInsert(Double.parseDouble(attributes.get("f-trip_distance")));
       db.insertWithAttributes(table, dbkey, values, attributes);
     } finally {
       transactioninsertkeysequence.acknowledge(keynum);

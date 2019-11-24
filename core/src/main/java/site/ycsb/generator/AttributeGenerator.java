@@ -24,10 +24,10 @@ import java.io.Reader;
 
 import java.util.*;
 import java.util.HashMap;
-// import java.util.TreeMap;
 import java.util.ArrayList;
 import java.util.Map;
-// import java.util.SortedMap;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -75,7 +75,7 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
   protected long attributecount;
   private List<Map<String, String>> currentDatasetEntry;
   private BufferedReader reader;
-  private Map<String, Double> tripDistanceValues;
+  private Set<Double> tripDistanceValues;
   protected NumberGenerator lBoundChooser;
   protected NumberGenerator rangeChooser;
   protected DiscreteGenerator latestQueryChooser;
@@ -85,7 +85,6 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
   protected boolean orderedinserts;
   protected boolean queryTypeRange;
   private NumberGenerator pointQueryValueGenerator;
-  protected NumberGenerator pointQuerySequence;
 
   /**
    * Create a AttributeGenerator with the given file.
@@ -94,7 +93,7 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
   public AttributeGenerator(String filename, int recordCount, Properties p) {
     this.filename = filename;
     this.recordCount = recordCount;
-    this.tripDistanceValues = new HashMap<String, Double>();
+    this.tripDistanceValues = new HashSet<Double>();
     pointQueryValueGenerator = new UniformLongGenerator(0, recordCount-1);
     int cachesize =
         Integer.parseInt(p.getProperty(CACHE_SIZE_PROPERTY, CACHE_SIZE_PROPERTY_DEFAULT));
@@ -102,7 +101,6 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
     long insertstart =
         Long.parseLong(p.getProperty(INSERT_START_PROPERTY, INSERT_START_PROPERTY_DEFAULT));
     keysequence = new CounterGenerator(insertstart);
-    pointQuerySequence = new CounterGenerator(0);
     if (p.getProperty(INSERT_ORDER_PROPERTY, INSERT_ORDER_PROPERTY_DEFAULT).compareTo("hashed") == 0) {
       orderedinserts = false;
     } else {
@@ -191,7 +189,7 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
       int keynum = keysequence.nextValue().intValue();
       String dbkey = buildKeyName(keynum);
       List<Map<String, String>> attributeList = nextValue();
-      tripDistanceInsert(dbkey, Double.parseDouble(attributeList.get(4).get("f-trip_distance")));
+      tripDistanceInsert(Double.parseDouble(attributeList.get(4).get("f-trip_distance")));
     }
   }
 
@@ -223,8 +221,8 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
     if (queryTypeRange) {
       throw new AssertionError("range Queries not implemented'");
     } else {
-      int querySeed = pointQuerySequence.nextValue().intValue();
-      double value = tripDistanceGet(querySeed);
+      int queryValueIndex = pointQueryValueGenerator.nextValue().intValue();
+      double value = tripDistanceGet(queryValueIndex);
       lbound[0] = String.valueOf(value);
       ubound[0] = String.valueOf(value);
     }
@@ -286,13 +284,13 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
     }
   }
 
-  public void tripDistanceInsert(String key, double value) {
-    tripDistanceValues.put(key, value);
+  public void tripDistanceInsert(double value) {
+    tripDistanceValues.add(value);
   }
 
-  private synchronized double tripDistanceGet(long keynum) {
-    String dbkey = buildKeyName(keynum % tripDistanceValues.size());
-    return (double) tripDistanceValues.get(dbkey);
+  private synchronized double tripDistanceGet(int index) {
+    Double[] tripDistanceArr = tripDistanceValues.toArray(new Double[tripDistanceValues.size()]);
+    return tripDistanceArr[index % tripDistanceValues.size()];
   }
 }
 

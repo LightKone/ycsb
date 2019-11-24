@@ -26,8 +26,6 @@ import java.util.*;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -75,7 +73,8 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
   protected long attributecount;
   private List<Map<String, String>> currentDatasetEntry;
   private BufferedReader reader;
-  private Set<Double> tripDistanceValues;
+  private HashMap<Double, Integer> tripDistanceValues;
+  private ArrayList<Double> tripDistanceValuesArr;
   protected NumberGenerator lBoundChooser;
   protected NumberGenerator rangeChooser;
   protected DiscreteGenerator latestQueryChooser;
@@ -93,7 +92,8 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
   public AttributeGenerator(String filename, int recordCount, Properties p) {
     this.filename = filename;
     this.recordCount = recordCount;
-    this.tripDistanceValues = new HashSet<Double>();
+    this.tripDistanceValues = new HashMap<Double, Integer>();
+    this.tripDistanceValuesArr = new ArrayList();
     pointQueryValueGenerator = new UniformLongGenerator(0, recordCount-1);
     int cachesize =
         Integer.parseInt(p.getProperty(CACHE_SIZE_PROPERTY, CACHE_SIZE_PROPERTY_DEFAULT));
@@ -284,13 +284,15 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
     }
   }
 
-  public void tripDistanceInsert(double value) {
-    tripDistanceValues.add(value);
+  public synchronized void tripDistanceInsert(double value) {
+    if (!tripDistanceValues.containsKey(value)) {
+      tripDistanceValues.put(value, new Integer(0));
+      tripDistanceValuesArr.add(value);
+    }
   }
 
   private synchronized double tripDistanceGet(int index) {
-    Double[] tripDistanceArr = tripDistanceValues.toArray(new Double[tripDistanceValues.size()]);
-    return tripDistanceArr[index % tripDistanceValues.size()];
+    return tripDistanceValuesArr.get(index % tripDistanceValues.size());
   }
 }
 

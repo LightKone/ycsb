@@ -424,7 +424,7 @@ public class CoreWorkload extends Workload {
     String attributedataset = p.getProperty(
         Client.ATTRIBUTE_DATASET_PROPERTY, Client.DEFAULT_ATTRIBUTE_DATASET);
 
-    attributeGenerator = new AttributeGenerator(attributedataset, (int) recordcount, p);
+    attributeGenerator = AttributeGenerator.getInstance(attributedataset, (int) recordcount, p);
 
     String requestdistrib =
         p.getProperty(REQUEST_DISTRIBUTION_PROPERTY, REQUEST_DISTRIBUTION_PROPERTY_DEFAULT);

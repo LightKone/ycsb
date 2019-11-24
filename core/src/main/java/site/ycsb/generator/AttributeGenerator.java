@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import site.ycsb.*;
 import site.ycsb.Utils;
 
 /**
@@ -66,10 +67,12 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
   public static final String QUERY_TYPE_PROPERTY = "querytype";
   public static final String QUERY_TYPE_PROPERTY_DEFAULT = "point";
 
+  private static AttributeGenerator instance = null;
   private final String filename;
   private String line;
   private int current;
   private int recordCount;
+  protected long attributecount;
   private List<Map<String, String>> currentDatasetEntry;
   private BufferedReader reader;
   private Map<String, Double> tripDistanceValues;
@@ -90,6 +93,7 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
    */
   public AttributeGenerator(String filename, int recordCount, Properties p) {
     this.filename = filename;
+    this.recordCount = recordCount;
     this.tripDistanceValues = new HashMap<String, Double>();
     pointQueryValueGenerator = new UniformLongGenerator(0, recordCount-1);
     int cachesize =
@@ -168,6 +172,26 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
       reader.readLine();
     } catch (IOException e) {
       throw new RuntimeException(e);
+    }
+    boolean dotransactions = Boolean.valueOf(p.getProperty(Client.DO_TRANSACTIONS_PROPERTY, String.valueOf(true)));
+    if (dotransactions) {
+      preload();
+    }
+  }
+
+  public static AttributeGenerator getInstance(String filename, int recordCount, Properties p) {
+    if (instance == null) {
+      instance = new AttributeGenerator(filename, recordCount, p);
+    }
+    return instance;
+  }
+
+  private void preload() {
+    for(int i=0; i<recordCount; i++) {
+      int keynum = keysequence.nextValue().intValue();
+      String dbkey = buildKeyName(keynum);
+      List<Map<String, String>> attributeList = nextValue();
+      tripDistanceInsert(dbkey, Double.parseDouble(attributeList.get(4).get("f-trip_distance")));
     }
   }
 
@@ -249,6 +273,7 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
     }
     return prekey + value;
   }
+
 
   /**
    * Reopen the file to reuse values.

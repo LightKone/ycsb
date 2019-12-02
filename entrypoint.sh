@@ -25,4 +25,6 @@ cd ${YCSB_DIR}
   -p cachedqueryproportion=${CACHEDQUERYPROPORTION} \
   -s > ${MEASUREMENT_RESULTS_DIR}/${OUTPUT_FILE_NAME}.txt
 
+if [ "$TYPE" = "run" ]; then
   cp QUERY.hdr ${MEASUREMENT_RESULTS_DIR}/${OUTPUT_FILE_NAME}.hdr
+fi

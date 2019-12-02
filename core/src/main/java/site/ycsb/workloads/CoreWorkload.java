@@ -425,8 +425,7 @@ public class CoreWorkload extends Workload {
     String attributedataset = p.getProperty(
         Client.ATTRIBUTE_DATASET_PROPERTY, Client.DEFAULT_ATTRIBUTE_DATASET);
 
-
-    if (p.getProperty(Client.DB_PROPERTY, "site.ycsb.BasicDB") == "site.ycsb.S3") {
+    if (p.getProperty(Client.DB_PROPERTY, "site.ycsb.BasicDB").equals("site.ycsb.db.S3Client")) {
       s3DB = true;
       attributeGenerator = AttributeGenerator.getInstance(attributedataset, (int) recordcount, p);
     }

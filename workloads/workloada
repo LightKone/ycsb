@@ -42,3 +42,4 @@ requestdistribution=zipfian
 
 queryresultcount=1
 
+hdrhistogram.fileoutput=true

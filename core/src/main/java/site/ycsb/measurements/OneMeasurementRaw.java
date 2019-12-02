@@ -138,9 +138,6 @@ public class OneMeasurementRaw extends OneMeasurement {
     measurements.add(new RawDataPoint(latency));
   }
 
-  @Override
-  public void measureOpCount() {
-  }
 
   @Override
   public void exportMeasurements(MeasurementsExporter exporter, long runtime)

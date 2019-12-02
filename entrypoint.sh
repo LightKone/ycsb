@@ -24,3 +24,5 @@ cd ${YCSB_DIR}
   -p updateproportion=${UPDATEPROPORTION} \
   -p cachedqueryproportion=${CACHEDQUERYPROPORTION} \
   -s > ${MEASUREMENT_RESULTS_DIR}/${OUTPUT_FILE_NAME}.txt
+
+  cp QUERY.hdr ${MEASUREMENT_RESULTS_DIR}/${OUTPUT_FILE_NAME}.hdr

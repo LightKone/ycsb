@@ -154,7 +154,6 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.read(table, key, fields, result);
       long en = System.nanoTime();
-      measureOpCount("READ", res);
       if (!warmup) {
         measure("READ", res, ist, st, en);
         measurements.reportStatus("READ", res);
@@ -171,7 +170,6 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.readWithAttributes(table, key, fields, result, attributes);
       long en = System.nanoTime();
-      measureOpCount("READ_WITH_ATTRIBUTES", res);
       if (!warmup) {
         measure("READ_WITH_ATTRIBUTES", res, ist, st, en);
         measurements.reportStatus("READ_WITH_ATTRIBUTES", res);
@@ -198,7 +196,6 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.scan(table, startkey, recordcount, fields, result);
       long en = System.nanoTime();
-      measureOpCount("SCAN", res);
       if (!warmup) {
         measure("SCAN", res, ist, st, en);
         measurements.reportStatus("SCAN", res);
@@ -224,19 +221,6 @@ public class DBWrapper extends DB {
         (int) ((endTimeNanos - intendedStartTimeNanos) / 1000));
   }
 
-  private void measureOpCount(String op, Status result) {
-    String measurementName = op;
-    if (result == null || !result.isOk()) {
-      if (this.reportLatencyForEachError ||
-          this.latencyTrackedErrors.contains(result.getName())) {
-        measurementName = op + "-" + result.getName();
-      } else {
-        measurementName = op + "-FAILED";
-      }
-    }
-    measurements.measureOpCount(measurementName);
-  }
-
   /**
    * Update a record in the database. Any field/value pairs in the specified values HashMap will be written into the
    * record with the specified record key, overwriting any existing values with the same field name.
@@ -253,7 +237,6 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.update(table, key, values);
       long en = System.nanoTime();
-      measureOpCount("UPDATE", res);
       if (!warmup) {
         measure("UPDATE", res, ist, st, en);
         measurements.reportStatus("UPDATE", res);
@@ -270,7 +253,6 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.updateWithAttributes(table, key, values, attributes);
       long en = System.nanoTime();
-      measureOpCount("UPDATE_WITH_ATTRIBUTES", res);
       if (!warmup) {
         measure("UPDATE_WITH_ATTRIBUTES", res, ist, st, en);
         measurements.reportStatus("UPDATE_WITH_ATTRIBUTES", res);
@@ -296,7 +278,6 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.insert(table, key, values);
       long en = System.nanoTime();
-      measureOpCount("INSERT", res);
       if (!warmup) {
         measure("INSERT", res, ist, st, en);
         measurements.reportStatus("INSERT", res);
@@ -313,7 +294,6 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.insertWithAttributes(table, key, values, attributes);
       long en = System.nanoTime();
-      measureOpCount("INSERT_WITH_ATTRIBUTES", res);
       if (!warmup) {
         measure("INSERT_WITH_ATTRIBUTES", res, ist, st, en);
         measurements.reportStatus("INSERT_WITH_ATTRIBUTES", res);
@@ -335,7 +315,6 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.delete(table, key);
       long en = System.nanoTime();
-      measureOpCount("DELETE", res);
       if (!warmup) {
         measure("DELETE", res, ist, st, en);
         measurements.reportStatus("DELETE", res);
@@ -351,7 +330,6 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.query(attributeName, attributeType, lbound, ubound, en);
       //long en = System.nanoTime();
-      measureOpCount("QUERY", res);
       if (!warmup) {
         measure("QUERY", res, ist, st, en[0]);
         measurements.reportStatus("QUERY", res);

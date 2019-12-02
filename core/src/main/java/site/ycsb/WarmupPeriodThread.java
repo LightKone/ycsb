@@ -17,6 +17,7 @@
 package site.ycsb;
 
 import java.util.List;
+//import site.ycsb.*;
 
 /**
  * A thread that waits for the maximum specified time and then interrupts all the client
@@ -48,6 +49,7 @@ public class WarmupPeriodThread extends Thread {
     for (ClientThread client : clients) {
       client.endWarmup();
     }
+    Client.startTimer();
     System.err.println("Warm up time elapsed. Starting measuring.");
   }
 }

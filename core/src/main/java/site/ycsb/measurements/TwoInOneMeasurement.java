@@ -53,9 +53,6 @@ public class TwoInOneMeasurement extends OneMeasurement {
     thing2.measure(latencyInMicros);
   }
 
-  @Override
-  public void measureOpCount() {
-  }
 
   /**
    * This is called from a main thread, on orderly termination.

@@ -364,6 +364,7 @@ public class CoreWorkload extends Workload {
   protected int zeropadding;
   protected int insertionRetryLimit;
   protected int insertionRetryInterval;
+  protected boolean s3DB = false;
   private Measurements measurements = Measurements.getMeasurements();
 
   protected static NumberGenerator getFieldLengthGenerator(Properties p) throws WorkloadException {
@@ -424,7 +425,11 @@ public class CoreWorkload extends Workload {
     String attributedataset = p.getProperty(
         Client.ATTRIBUTE_DATASET_PROPERTY, Client.DEFAULT_ATTRIBUTE_DATASET);
 
-    attributeGenerator = AttributeGenerator.getInstance(attributedataset, (int) recordcount, p);
+
+    if (p.getProperty(Client.DB_PROPERTY, "site.ycsb.BasicDB") == "site.ycsb.S3") {
+      s3DB = true;
+      attributeGenerator = AttributeGenerator.getInstance(attributedataset, (int) recordcount, p);
+    }
 
     String requestdistrib =
         p.getProperty(REQUEST_DISTRIBUTION_PROPERTY, REQUEST_DISTRIBUTION_PROPERTY_DEFAULT);
@@ -613,12 +618,14 @@ public class CoreWorkload extends Workload {
     String dbkey = buildKeyName(keynum);
     HashMap<String, ByteIterator> values = buildValues(dbkey);
 
-    List<Map<String, String>> attributeList = attributeGenerator.nextValue();
     Map<String, String> attributes = new HashMap<String, String>();
-    for (int i=0; i<attributeList.size() && i < attributecount; i++) {
-      attributes.putAll(attributeList.get(i));
+    if (s3DB) {
+      List<Map<String, String>> attributeList = attributeGenerator.nextValue();
+      for (int i=0; i<attributeList.size() && i < attributecount; i++) {
+        attributes.putAll(attributeList.get(i));
+      }
+      attributeGenerator.tripDistanceInsert(Double.parseDouble(attributes.get("f-trip_distance")));
     }
-    attributeGenerator.tripDistanceInsert(Double.parseDouble(attributes.get("f-trip_distance")));
     Status status;
     int numOfRetries = 0;
     do {

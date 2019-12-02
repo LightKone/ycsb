@@ -117,9 +117,6 @@ public class OneMeasurementHistogram extends OneMeasurement {
     }
   }
 
-  @Override
-  public void measureOpCount() {
-  }
 
   @Override
   public void exportMeasurements(MeasurementsExporter exporter, long runtime) throws IOException {

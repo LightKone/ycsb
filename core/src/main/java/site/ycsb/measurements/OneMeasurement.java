@@ -47,8 +47,6 @@ public abstract class OneMeasurement {
 
   public abstract void measure(int latency);
 
-  public abstract void measureOpCount();
-
   public abstract String getSummary();
 
   /**

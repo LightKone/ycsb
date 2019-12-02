@@ -1,0 +1,33 @@
+FROM openjdk:8u212-jdk-stretch
+
+
+ENV OUTPUT_FILE_NAME out
+ENV PREFIX prefix
+
+ENV YCSB_DIR /app/ycsb
+ENV MEASUREMENT_RESULTS_DIR /ycsb
+
+RUN apt-get update && apt-get install -y \
+  git \
+  maven \
+  build-essential
+
+COPY . $YCSB_DIR
+
+ADD ./entrypoint_parse.sh /
+
+WORKDIR /app
+
+# RUN git clone --single-branch --branch proteus https://github.com/dvasilas/YCSB.git
+# RUN git clone https://github.com/dvasilas/proteus.git
+RUN git clone https://github.com/vishnubob/wait-for-it.git
+
+# RUN cd ./proteus/proteus_java_client && ./gradlew installDist
+# RUN mkdir ./YCSB/s3/src/main/resources \
+    # && cp ./proteus/proteus_java_client/build/libs/proteusclient.jar ./YCSB/s3/src/main/resources/
+
+RUN mkdir ${MEASUREMENT_RESULTS_DIR}
+
+VOLUME ${MEASUREMENT_RESULTS_DIR}
+
+ENTRYPOINT ["/entrypoint_parse.sh"]

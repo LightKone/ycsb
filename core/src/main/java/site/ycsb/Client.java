@@ -174,6 +174,8 @@ public final class Client {
   private static final String CLIENT_CLEANUP_SPAN = "Client#cleanup";
   private static final String CLIENT_EXPORT_MEASUREMENTS_SPAN = "Client#export_measurements";
 
+  private static long startTs;
+
   public static void usageMessage() {
     System.out.println("Usage: java site.ycsb.Client [options]");
     System.out.println("Options:");
@@ -212,6 +214,9 @@ public final class Client {
     return true;
   }
 
+  public static void startTimer() {
+    startTs = System.currentTimeMillis();
+  }
 
   /**
    * Exports the measurements to either sysout or a file using the exporter
@@ -219,7 +224,7 @@ public final class Client {
    *
    * @throws IOException Either failed to write to output stream or failed to close it.
    */
-  private static void exportMeasurements(Properties props, int opcount, long runtime)
+  private static void exportMeasurements(Properties props, int opcount, long runtime, long runTimeMWarmup)
       throws IOException {
     MeasurementsExporter exporter = null;
     try {
@@ -246,6 +251,7 @@ public final class Client {
       }
 
       exporter.write("OVERALL", "RunTime(ms)", runtime);
+      exporter.write("OVERALL", "RunTime/Warmup (ms)", runTimeMWarmup);
       double throughput = 1000.0 * (opcount) / (runtime);
       exporter.write("OVERALL", "Throughput(ops/sec)", throughput);
 
@@ -273,7 +279,7 @@ public final class Client {
         exporter.write("MIN_SYS_LOAD_AVG", "Load", statusthread.getMinLoadAvg());
       }
 
-      Measurements.getMeasurements().exportMeasurements(exporter, runtime);
+      Measurements.getMeasurements().exportMeasurements(exporter, runTimeMWarmup);
     } finally {
       if (exporter != null) {
         exporter.close();
@@ -412,7 +418,7 @@ public final class Client {
 
     try {
       try (final TraceScope span = tracer.newScope(CLIENT_EXPORT_MEASUREMENTS_SPAN)) {
-        exportMeasurements(props, opsDone, en - st);
+        exportMeasurements(props, opsDone, en - st, en - startTs);
       }
     } catch (IOException e) {
       System.err.println("Could not export measurements, error: " + e.getMessage());

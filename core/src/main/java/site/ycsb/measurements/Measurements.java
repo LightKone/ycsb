@@ -195,11 +195,6 @@ public class Measurements {
     }
   }
 
-  public void measureOpCount(String operation) {
-    OneMeasurement m = getOpMeasurement(operation);
-    m.measureOpCount();
-  }
-
   /**
    * Report a single value of a single metric. E.g. for read latency, operation="READ" and latency is the measured
    * value.
@@ -260,7 +255,13 @@ public class Measurements {
    * @param exporter Exporter representing the type of format to write to.
    * @throws IOException Thrown if the export failed.
    */
+
   public void exportMeasurements(MeasurementsExporter exporter, long runtime) throws IOException {
+    if (Boolean.valueOf(props.getProperty("parse", String.valueOf(false)))) {
+      OneMeasurement m = getOpMeasurement("QUERY");
+      m.exportMeasurements(exporter, runtime);
+      return;
+    }
     for (OneMeasurement measurement : opToMesurementMap.values()) {
       measurement.exportMeasurements(exporter, runtime);
     }

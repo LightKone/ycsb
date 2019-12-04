@@ -171,6 +171,13 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+    for (int i=0; i<insertstart; i++) {
+      try {
+        line = reader.readLine();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
     boolean dotransactions = Boolean.valueOf(p.getProperty(Client.DO_TRANSACTIONS_PROPERTY, String.valueOf(true)));
     if (dotransactions) {
       preload();

@@ -625,7 +625,7 @@ public class S3Client extends DB {
         }
         Map<String, String> queryMetadata = new HashMap<String, String>();
         queryMetadata.put("maxResponseCount", queryResultCount);
-        proteusClient.query(queryPredicates, queryMetadata, finishLatch, requestObserver);
+        proteusClient.query(queryPredicates, queryMetadata, finishLatch, requestObserver, false);
         finishLatch.await();
       } else {
         System.err.println("Query parameters are not of equal length");

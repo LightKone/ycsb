@@ -31,7 +31,7 @@ ENV MEASUREMENT_RESULTS_DIR /ycsb
 RUN apt-get update && apt-get install -y \
   git \
   maven \
-  nc \
+  netcat \
   build-essential
 
 COPY . $YCSB_DIR

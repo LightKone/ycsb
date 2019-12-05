@@ -337,6 +337,17 @@ public final class Client {
     final List<ClientThread> clients = initDb(dbname, props, threadcount, targetperthreadperms,
         workload, tracer, completeLatch);
 
+    if (Boolean.valueOf(props.getProperty("useBarrier", "false"))) {
+      try {
+        System.out.println("sleep");
+        TimeUnit.SECONDS.sleep(Integer.parseInt(props.getProperty("sleep", "0")));
+        System.out.println("sleep");
+      } catch (Exception e) {
+        e.printStackTrace();
+        e.printStackTrace(System.out);
+      }
+    }
+
     if (status) {
       boolean standardstatus = false;
       if (props.getProperty(Measurements.MEASUREMENT_TYPE_PROPERTY, "").compareTo("timeseries") == 0) {
@@ -356,16 +367,6 @@ public final class Client {
     int opsDone;
 
     try (final TraceScope span = tracer.newScope(CLIENT_WORKLOAD_SPAN)) {
-      if (Boolean.valueOf(props.getProperty("useBarrier", "false"))) {
-        try {
-          System.out.println("sleep");
-          TimeUnit.SECONDS.sleep(Integer.parseInt(props.getProperty("sleep", "0")));
-          System.out.println("sleep");
-        } catch (Exception e) {
-          e.printStackTrace();
-          e.printStackTrace(System.out);
-        }
-      }
 
       final Map<Thread, ClientThread> threads = new HashMap<>(threadcount);
       for (ClientThread client : clients) {

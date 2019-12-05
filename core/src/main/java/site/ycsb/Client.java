@@ -365,49 +365,6 @@ public final class Client {
           e.printStackTrace();
           e.printStackTrace(System.out);
         }
-        // try {
-        //   if (props.getProperty("barrierNode", "").equals("master")) {
-        //     String c1 = props.getProperty("barrierClient1", "");
-        //     String c2 = props.getProperty("barrierClient2", "");
-        //     String cmd = String.format("./barrierMaster.sh %s %s", c1, c2);
-        //     System.out.println(cmd);
-        //     String line;
-        //     Process barrier = Runtime.getRuntime().exec(cmd, null);
-        //     BufferedReader input = new BufferedReader(new InputStreamReader(barrier.getInputStream()));
-        //     while ((line = input.readLine()) != null) {
-        //       System.out.println(line);
-        //     }
-        //     input.close();
-        //     // barrier.waitFor();
-        //   } else if (props.getProperty("barrierNode", "").equals("client1")) {
-        //     String m = props.getProperty("barrierMaster", "");
-        //     String cmd = String.format("./barrierClient1.sh %s", m);
-        //     System.out.println(cmd);
-        //     String line;
-        //     Process barrier = Runtime.getRuntime().exec(cmd, null);
-        //     BufferedReader input = new BufferedReader(new InputStreamReader(barrier.getInputStream()));
-        //     while ((line = input.readLine()) != null) {
-        //       System.out.println(line);
-        //     }
-        //     input.close();
-        //     // barrier.waitFor();
-        //   } else if (props.getProperty("barrierNode", "").equals("client2")) {
-        //     String m = props.getProperty("barrierMaster", "");
-        //     String cmd = String.format("./barrierClient2.sh %s", m);
-        //     System.out.println(cmd);
-        //     String line;
-        //     Process barrier = Runtime.getRuntime().exec(cmd, null);
-        //     BufferedReader input = new BufferedReader(new InputStreamReader(barrier.getInputStream()));
-        //     while ((line = input.readLine()) != null) {
-        //       System.out.println(line);
-        //     }
-        //     input.close();
-        //     // barrier.waitFor();
-        //   }
-        // } catch (Exception e) {
-        //   e.printStackTrace();
-        //   e.printStackTrace(System.out);
-        // }
       }
 
       final Map<Thread, ClientThread> threads = new HashMap<>(threadcount);

@@ -7,19 +7,11 @@ fi
 
 cd ${YCSB_DIR}
 
-chmod +x barrierMaster.sh
-chmod +x barrierClient1.sh
-chmod +x barrierClient2.sh
-
 ./bin/ycsb ${TYPE} s3 \
   -P ./workloads/${WORKLOAD} \
   -p table=${TABLE} \
-  -p sleep=${SLEEP} \
   -p useBarrier=${USEBARRIER} \
-  -p barrierNode=${BARRIERNODE} \
-  -p barrierMaster=${BARRIERMASTER} \
-  -p barrierClient1=${BARRIERCLIENT1} \
-  -p barrierClient2=${BARRIERCLIENT2} \
+  -p sleep=${SLEEP} \
   -threads ${THREADS} \
   -p maxexecutiontime=${EXECUTIONTIME} \
   -p warmuptime=${WARMUPTIME} \

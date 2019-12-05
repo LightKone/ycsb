@@ -7,6 +7,10 @@ fi
 
 cd ${YCSB_DIR}
 
+chmod +x barrierMaster.sh
+chmod +x barrierClient1.sh
+chmod +x barrierClient2.sh
+
 ./bin/ycsb ${TYPE} s3 \
   -P ./workloads/${WORKLOAD} \
   -p table=${TABLE} \

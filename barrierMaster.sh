@@ -1,5 +1,6 @@
 #!/bin/bash
 
+echo hello
 host1=$1
 host2=$2
 nc -l 2387 &

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+echo hello
 master=$1
 nc -l 2398 &
 f=$!

@@ -360,16 +360,19 @@ public final class Client {
             String c1 = props.getProperty("barrierClient1", "");
             String c2 = props.getProperty("barrierClient2", "");
             String cmd = String.format("./barrierMaster.sh %s %s", c1, c2);
+            System.out.println(cmd);
             Process barrier = Runtime.getRuntime().exec(cmd, null);
             barrier.waitFor();
           } else if (props.getProperty("barrierNode", "").equals("client1")) {
             String m = props.getProperty("barrierMaster", "");
             String cmd = String.format("./barrierClient1.sh %s", m);
+            System.out.println(cmd);
             Process barrier = Runtime.getRuntime().exec(cmd, null);
             barrier.waitFor();
           } else if (props.getProperty("barrierNode", "").equals("client2")) {
             String m = props.getProperty("barrierMaster", "");
             String cmd = String.format("./barrierClient2.sh %s", m);
+            System.out.println(cmd);
             Process barrier = Runtime.getRuntime().exec(cmd, null);
             barrier.waitFor();
           }

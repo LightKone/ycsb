@@ -10,6 +10,11 @@ cd ${YCSB_DIR}
 ./bin/ycsb ${TYPE} s3 \
   -P ./workloads/${WORKLOAD} \
   -p table=${TABLE} \
+  -p useBarrier=${USEBARRIER} \
+  -p barrierNode=${BARRIERNODE} \
+  -p barrierMaster=${BARRIERMASTER} \
+  -p barrierClient1=${BARRIERCLIENT1} \
+  -p barrierClient2=${BARRIERCLIENT2} \
   -threads ${THREADS} \
   -p maxexecutiontime=${EXECUTIONTIME} \
   -p warmuptime=${WARMUPTIME} \

@@ -354,6 +354,30 @@ public final class Client {
     int opsDone;
 
     try (final TraceScope span = tracer.newScope(CLIENT_WORKLOAD_SPAN)) {
+      if (Boolean.valueOf(props.getProperty("useBarrier", "false"))) {
+        try {
+          if (props.getProperty("barrierNode", "").equals("master")) {
+            String c1 = props.getProperty("barrierClient1", "");
+            String c2 = props.getProperty("barrierClient2", "");
+            String cmd = String.format("./barrierMaster.sh %s %s", c1, c2);
+            Process barrier = Runtime.getRuntime().exec(cmd, null);
+            barrier.waitFor();
+          } else if (props.getProperty("barrierNode", "").equals("client1")) {
+            String m = props.getProperty("barrierMaster", "");
+            String cmd = String.format("./barrierClient1.sh %s", m);
+            Process barrier = Runtime.getRuntime().exec(cmd, null);
+            barrier.waitFor();
+          } else if (props.getProperty("barrierNode", "").equals("client2")) {
+            String m = props.getProperty("barrierMaster", "");
+            String cmd = String.format("./barrierClient2.sh %s", m);
+            Process barrier = Runtime.getRuntime().exec(cmd, null);
+            barrier.waitFor();
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+          e.printStackTrace(System.out);
+        }
+      }
 
       final Map<Thread, ClientThread> threads = new HashMap<>(threadcount);
       for (ClientThread client : clients) {

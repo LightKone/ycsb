@@ -14,6 +14,7 @@ chmod +x barrierClient2.sh
 ./bin/ycsb ${TYPE} s3 \
   -P ./workloads/${WORKLOAD} \
   -p table=${TABLE} \
+  -p sleep=${SLEEP} \
   -p useBarrier=${USEBARRIER} \
   -p barrierNode=${BARRIERNODE} \
   -p barrierMaster=${BARRIERMASTER} \

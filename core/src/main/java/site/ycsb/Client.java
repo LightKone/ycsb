@@ -32,7 +32,8 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 /**
  * Turn seconds remaining into more useful units.
  * i.e. if there are hours or days worth of seconds, use them.
@@ -361,20 +362,38 @@ public final class Client {
             String c2 = props.getProperty("barrierClient2", "");
             String cmd = String.format("./barrierMaster.sh %s %s", c1, c2);
             System.out.println(cmd);
+            String line;
             Process barrier = Runtime.getRuntime().exec(cmd, null);
-            barrier.waitFor();
+            BufferedReader input = new BufferedReader(new InputStreamReader(barrier.getInputStream()));
+            while ((line = input.readLine()) != null) {
+              System.out.println(line);
+            }
+            input.close();
+            // barrier.waitFor();
           } else if (props.getProperty("barrierNode", "").equals("client1")) {
             String m = props.getProperty("barrierMaster", "");
             String cmd = String.format("./barrierClient1.sh %s", m);
             System.out.println(cmd);
+            String line;
             Process barrier = Runtime.getRuntime().exec(cmd, null);
-            barrier.waitFor();
+            BufferedReader input = new BufferedReader(new InputStreamReader(barrier.getInputStream()));
+            while ((line = input.readLine()) != null) {
+              System.out.println(line);
+            }
+            input.close();
+            // barrier.waitFor();
           } else if (props.getProperty("barrierNode", "").equals("client2")) {
             String m = props.getProperty("barrierMaster", "");
             String cmd = String.format("./barrierClient2.sh %s", m);
             System.out.println(cmd);
+            String line;
             Process barrier = Runtime.getRuntime().exec(cmd, null);
-            barrier.waitFor();
+            BufferedReader input = new BufferedReader(new InputStreamReader(barrier.getInputStream()));
+            while ((line = input.readLine()) != null) {
+              System.out.println(line);
+            }
+            input.close();
+            // barrier.waitFor();
           }
         } catch (Exception e) {
           e.printStackTrace();

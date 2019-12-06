@@ -194,8 +194,7 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
   public void preload(Properties p, DB db) {
     boolean dotransactions = Boolean.valueOf(p.getProperty(Client.DO_TRANSACTIONS_PROPERTY, String.valueOf(true)));
     if (dotransactions) {
-      for(long i=insertstart; i<insertcount; i++) {
-
+      for(long i=0; i<insertcount; i++) {
         HashSet<String> fields = null;
         HashMap<String, ByteIterator> cells = new HashMap<String, ByteIterator>();
         Map<String, String> attributes = new HashMap<String, String>();

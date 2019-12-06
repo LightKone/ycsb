@@ -334,9 +334,6 @@ public final class Client {
     System.err.println("Starting test.");
     final CountDownLatch completeLatch = new CountDownLatch(threadcount);
 
-    final List<ClientThread> clients = initDb(dbname, props, threadcount, targetperthreadperms,
-        workload, tracer, completeLatch);
-
     if (Boolean.valueOf(props.getProperty("useBarrier", "false"))) {
       try {
         System.out.println("sleep");
@@ -347,6 +344,10 @@ public final class Client {
         e.printStackTrace(System.out);
       }
     }
+
+    final List<ClientThread> clients = initDb(dbname, props, threadcount, targetperthreadperms,
+        workload, tracer, completeLatch);
+
 
     if (status) {
       boolean standardstatus = false;

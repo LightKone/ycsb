@@ -85,6 +85,16 @@ public class ClientThread implements Runnable {
     return opsdone;
   }
 
+  public void preload() {
+    try {
+      db.init();
+    } catch (DBException e) {
+      e.printStackTrace();
+      e.printStackTrace(System.out);
+    }
+    workload.preload(props, db);
+  }
+
   @Override
   public void run() {
     try {

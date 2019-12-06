@@ -356,7 +356,7 @@ public class CoreWorkload extends Workload {
   protected NumberGenerator fieldchooser;
   protected AcknowledgedCounterGenerator transactioninsertkeysequence;
   protected NumberGenerator scanlength;
-  protected AttributeGenerator attributeGenerator;
+  protected AttributeGenerator attributeGenerator = null;
   protected boolean orderedinserts;
   protected long fieldcount;
   protected long recordcount;
@@ -539,7 +539,9 @@ public class CoreWorkload extends Workload {
 
   @Override
   public void preload(Properties p, DB db) {
-    attributeGenerator.preload(p, db);
+    if (attributeGenerator != null) {
+      attributeGenerator.preload(p, db);
+    }
   }
 
   protected String buildKeyName(long keynum) {

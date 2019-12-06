@@ -348,6 +348,7 @@ public final class Client {
     final List<ClientThread> clients = initDb(dbname, props, threadcount, targetperthreadperms,
         workload, tracer, completeLatch);
 
+    clients.get(0).preload();
 
     if (status) {
       boolean standardstatus = false;
@@ -490,15 +491,6 @@ public final class Client {
         if (threadid < opcount % threadcount) {
           ++threadopcount;
         }
-
-        try {
-          db.init();
-        } catch (DBException e) {
-          e.printStackTrace();
-          e.printStackTrace(System.out);
-        }
-        workload.preload(props, db);
-
         ClientThread t = new ClientThread(db, dotransactions, workload, props, threadopcount, targetperthreadperms,
             completeLatch);
         t.setThreadId(threadid);

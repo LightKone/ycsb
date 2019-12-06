@@ -51,7 +51,6 @@ public class TerminatorThread extends Thread {
     System.err.println("Maximum time elapsed. Requesting stop for the workload.");
     workload.requestStop();
     System.err.println("Stop requested for workload. Now Joining!");
-    int retries = 0;
     for (Thread t : threads) {
       while (t.isAlive()) {
         try {
@@ -60,13 +59,7 @@ public class TerminatorThread extends Thread {
             System.out.println("Still waiting for thread " + t.getName() + " to complete. " +
                 "Workload status: " + workload.isStopRequested());
           }
-          retries++;
-          if (retries > 10) {
-            break;
-          }
         } catch (InterruptedException e) {
-          e.printStackTrace();
-          e.printStackTrace(System.out);
           // Do nothing. Don't know why I was interrupted.
         }
       }

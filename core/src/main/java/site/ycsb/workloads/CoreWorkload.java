@@ -425,11 +425,6 @@ public class CoreWorkload extends Workload {
     String attributedataset = p.getProperty(
         Client.ATTRIBUTE_DATASET_PROPERTY, Client.DEFAULT_ATTRIBUTE_DATASET);
 
-    if (p.getProperty(Client.DB_PROPERTY, "site.ycsb.BasicDB").equals("site.ycsb.db.S3Client")) {
-      s3DB = true;
-      attributeGenerator = AttributeGenerator.getInstance(attributedataset, (int) recordcount, p);
-    }
-
     String requestdistrib =
         p.getProperty(REQUEST_DISTRIBUTION_PROPERTY, REQUEST_DISTRIBUTION_PROPERTY_DEFAULT);
     int minscanlength =
@@ -449,6 +444,12 @@ public class CoreWorkload extends Workload {
       System.err.println("recordcount must be bigger than insertstart + insertcount.");
       System.exit(-1);
     }
+
+    if (p.getProperty(Client.DB_PROPERTY, "site.ycsb.BasicDB").equals("site.ycsb.db.S3Client")) {
+      s3DB = true;
+      attributeGenerator = AttributeGenerator.getInstance(attributedataset, insertstart, insertcount, p);
+    }
+
     zeropadding =
         Integer.parseInt(p.getProperty(ZERO_PADDING_PROPERTY, ZERO_PADDING_PROPERTY_DEFAULT));
 
@@ -505,7 +506,7 @@ public class CoreWorkload extends Workload {
       int opcount = Integer.parseInt(p.getProperty(Client.OPERATION_COUNT_PROPERTY));
       int expectednewkeys = (int) ((opcount) * insertproportion * 2.0); // 2 is fudge factor
 
-      keychooser = new ScrambledZipfianGenerator(insertstart, insertstart + insertcount + expectednewkeys);
+      keychooser = new ScrambledZipfianGenerator(insertstart, insertstart + insertcount - 1 + expectednewkeys);
     } else if (requestdistrib.compareTo("latest") == 0) {
       keychooser = new SkewedLatestGenerator(transactioninsertkeysequence);
     } else if (requestdistrib.equals("hotspot")) {
@@ -534,6 +535,11 @@ public class CoreWorkload extends Workload {
         INSERTION_RETRY_LIMIT, INSERTION_RETRY_LIMIT_DEFAULT));
     insertionRetryInterval = Integer.parseInt(p.getProperty(
         INSERTION_RETRY_INTERVAL, INSERTION_RETRY_INTERVAL_DEFAULT));
+  }
+
+  @Override
+  public void preload(Properties p, DB db) {
+    attributeGenerator.preload(p, db);
   }
 
   protected String buildKeyName(long keynum) {

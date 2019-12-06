@@ -60,6 +60,9 @@ public abstract class Workload {
   public void init(Properties p) throws WorkloadException {
   }
 
+  public void preload(Properties p, DB db) {
+  }
+
   /**
    * Initialize any state for a particular client thread. Since the scenario object
    * will be shared among all threads, this is the place to create any state that is specific

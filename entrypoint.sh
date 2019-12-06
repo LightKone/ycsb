@@ -23,6 +23,7 @@ cd ${YCSB_DIR}
   -p s3.secretKey=${S3SECRETKEY} \
   -p recordcount=${RECORDCOUNT} \
   -p insertstart=${INSERTSTART} \
+  -p insertcount=${INSERTCOUNT} \
   -p queryproportion=${QUERYPROPORTION} \
   -p updateproportion=${UPDATEPROPORTION} \
   -p cachedqueryproportion=${CACHEDQUERYPROPORTION} \

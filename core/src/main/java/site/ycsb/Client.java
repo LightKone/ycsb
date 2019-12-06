@@ -490,6 +490,14 @@ public final class Client {
           ++threadopcount;
         }
 
+        try {
+          db.init();
+        } catch (DBException e) {
+          e.printStackTrace();
+          e.printStackTrace(System.out);
+        }
+        workload.preload(props, db);
+
         ClientThread t = new ClientThread(db, dotransactions, workload, props, threadopcount, targetperthreadperms,
             completeLatch);
         t.setThreadId(threadid);

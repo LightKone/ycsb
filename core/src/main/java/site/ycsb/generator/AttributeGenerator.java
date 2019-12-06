@@ -64,12 +64,16 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
   public static final String ZERO_PADDING_PROPERTY_DEFAULT = "1";
   public static final String QUERY_TYPE_PROPERTY = "querytype";
   public static final String QUERY_TYPE_PROPERTY_DEFAULT = "point";
+  public static final String TABLENAME_PROPERTY = "table";
+  public static final String TABLENAME_PROPERTY_DEFAULT = "usertable";
 
+  protected String table;
   private static AttributeGenerator instance = null;
   private final String filename;
   private String line;
   private int current;
-  private int recordCount;
+  private long insertstart;
+  private long insertcount;
   protected long attributecount;
   private List<Map<String, String>> currentDatasetEntry;
   private BufferedReader reader;
@@ -89,23 +93,23 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
    * Create a AttributeGenerator with the given file.
    * @param filename The file to read lines from.
    */
-  public AttributeGenerator(String filename, int recordCount, Properties p) {
+  public AttributeGenerator(String filename, long insertstart, long insertcount, Properties p) {
     this.filename = filename;
-    this.recordCount = recordCount;
+    this.insertstart = insertstart;
+    this.insertcount = insertcount;
     this.tripDistanceValues = new HashMap<Double, Integer>();
     this.tripDistanceValuesArr = new ArrayList();
-    pointQueryValueGenerator = new UniformLongGenerator(0, recordCount-1);
+    pointQueryValueGenerator = new UniformLongGenerator(insertstart, insertstart + insertcount - 1);
     int cachesize =
         Integer.parseInt(p.getProperty(CACHE_SIZE_PROPERTY, CACHE_SIZE_PROPERTY_DEFAULT));
     this.prevQueries = new PreviousQueries(cachesize);
-    long insertstart =
-        Long.parseLong(p.getProperty(INSERT_START_PROPERTY, INSERT_START_PROPERTY_DEFAULT));
     keysequence = new CounterGenerator(insertstart);
     if (p.getProperty(INSERT_ORDER_PROPERTY, INSERT_ORDER_PROPERTY_DEFAULT).compareTo("hashed") == 0) {
       orderedinserts = false;
     } else {
       orderedinserts = true;
     }
+    this.table = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
     zeropadding =
         Integer.parseInt(p.getProperty(ZERO_PADDING_PROPERTY, ZERO_PADDING_PROPERTY_DEFAULT));
     if (p.getProperty(QUERY_TYPE_PROPERTY, QUERY_TYPE_PROPERTY_DEFAULT).compareTo("range") == 0) {
@@ -171,32 +175,36 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    for (int i=0; i<insertstart; i++) {
+    for (long i=0; i<insertstart; i++) {
       try {
         line = reader.readLine();
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
-    boolean dotransactions = Boolean.valueOf(p.getProperty(Client.DO_TRANSACTIONS_PROPERTY, String.valueOf(true)));
-    if (dotransactions) {
-      preload();
-    }
   }
 
-  public static AttributeGenerator getInstance(String filename, int recordCount, Properties p) {
+  public static AttributeGenerator getInstance(String filename, long insertstart, long insertcount, Properties p) {
     if (instance == null) {
-      instance = new AttributeGenerator(filename, recordCount, p);
+      instance = new AttributeGenerator(filename, insertstart, insertcount, p);
     }
     return instance;
   }
 
-  private void preload() {
-    for(int i=0; i<recordCount; i++) {
-      int keynum = keysequence.nextValue().intValue();
-      String dbkey = buildKeyName(keynum);
-      List<Map<String, String>> attributeList = nextValue();
-      tripDistanceInsert(Double.parseDouble(attributeList.get(4).get("f-trip_distance")));
+  public void preload(Properties p, DB db) {
+    boolean dotransactions = Boolean.valueOf(p.getProperty(Client.DO_TRANSACTIONS_PROPERTY, String.valueOf(true)));
+    if (dotransactions) {
+      for(long i=insertstart; i<insertcount; i++) {
+
+        HashSet<String> fields = null;
+        HashMap<String, ByteIterator> cells = new HashMap<String, ByteIterator>();
+        Map<String, String> attributes = new HashMap<String, String>();
+        int keynum = keysequence.nextValue().intValue();
+        String keyname = buildKeyName(keynum);
+        db.readWithAttributes(table, keyname, fields, cells, attributes);
+        tripDistanceInsert(Double.parseDouble(attributes.get("f-trip_distance")));
+
+      }
     }
   }
 

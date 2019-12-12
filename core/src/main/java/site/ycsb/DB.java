@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * A layer for accessing a database to be benchmarked. Each thread in the client
@@ -131,7 +132,8 @@ public abstract class DB {
   public abstract Status insert(String table, String key, Map<String, ByteIterator> values);
 
   public abstract Status insertWithAttributes(String table, String key, Map<String, ByteIterator> values,
-                                            Map<String, String> attributes);
+                                            Map<String, String> attributes,
+                                            long []stTs);
 
   /**
    * Delete a record from the database.
@@ -144,6 +146,10 @@ public abstract class DB {
 
   public abstract Status query(String []attributeName, String []attributeType,  java.lang.Object []lbound,
                               java.lang.Object []ubound, long []en);
+
+  public abstract Status subscribeQuery(String []attributeName, String []attributeType,  java.lang.Object []lbound,
+                              java.lang.Object []ubound, Map<String, Long> notificationTimestamps,
+                              CountDownLatch finishLatch);
 
   public abstract void endWarmup();
 }

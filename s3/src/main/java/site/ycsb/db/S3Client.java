@@ -275,7 +275,7 @@ public class S3Client extends DB {
   @Override
   public Status insertWithAttributes(String bucket, String key,
                                     Map<String, ByteIterator> values,
-                                    Map<String, String> attributes) {
+                                    Map<String, String> attributes, long []stTs) {
     return writeToStorage(bucket, key, values, attributes, true, sse, ssecKey);
   }
   /**
@@ -626,6 +626,73 @@ public class S3Client extends DB {
         Map<String, String> queryMetadata = new HashMap<String, String>();
         queryMetadata.put("maxResponseCount", queryResultCount);
         proteusClient.query(queryPredicates, queryMetadata, finishLatch, requestObserver, false);
+        finishLatch.await();
+      } else {
+        System.err.println("Query parameters are not of equal length");
+        return Status.ERROR;
+      }
+    } catch (InterruptedException e) {
+      System.err.println("Query failed "+ e.getMessage());
+      e.printStackTrace();
+      return Status.ERROR;
+    }
+    return Status.OK;
+  }
+
+  public Status subscribeQuery(String []attributeName, String []attributeType,  java.lang.Object []lbound,
+                              java.lang.Object []ubound, Map<String, Long> notificationTimestamps,
+                              CountDownLatch finishLatch) {
+    try {
+      final StreamObserver<ResponseStreamRecord> requestObserver = new StreamObserver<ResponseStreamRecord>() {
+        @Override
+        public void onNext(ResponseStreamRecord record) {
+          long en = System.nanoTime();
+          String objectID = record.getLogOp().getObjectId();
+          if (objectID.startsWith("fr_")) {
+            notificationTimestamps.put(objectID, en);
+          }
+        }
+        @Override
+        public void onError(Throwable t) {
+          System.err.println("Query failed " + t.getMessage());
+          t.printStackTrace();
+          finishLatch.countDown();
+        }
+        @Override
+        public void onCompleted() {
+          finishLatch.countDown();
+        }
+      };
+      QueryPredicate[] queryPredicates = new QueryPredicate[attributeName.length];
+      if (attributeName.length == attributeType.length && attributeName.length == lbound.length &&
+          attributeName.length == ubound.length) {
+        for (int i=0; i<attributeName.length; i++) {
+          AttributeValue lb;
+          AttributeValue ub;
+          Attribute.AttributeType attrType;
+          switch (attributeType[i]) {
+          case "S3TAGSTR":
+            attrType = Attribute.AttributeType.S3TAGSTR;
+            lb = new AttributeValue((java.lang.String) lbound[i]);
+            ub = new AttributeValue((java.lang.String) ubound[i]);
+            break;
+          case "S3TAGINT":
+            attrType = Attribute.AttributeType.S3TAGINT;
+            lb = new AttributeValue(Long.parseLong((java.lang.String) lbound[i]));
+            ub = new AttributeValue(Long.parseLong((java.lang.String) ubound[i]));
+            break;
+          case "S3TAGFLT":
+            attrType = Attribute.AttributeType.S3TAGFLT;
+            lb = new AttributeValue(Double.parseDouble((java.lang.String) lbound[i]));
+            ub = new AttributeValue(Double.parseDouble((java.lang.String) ubound[i]));
+            break;
+          default:
+            System.err.println("Error in query parameters");
+            return Status.ERROR;
+          }
+          queryPredicates[0] = new QueryPredicate(attributeName[i], attrType, lb, ub);
+        }
+        proteusClient.query(queryPredicates, null, finishLatch, requestObserver, true);
         finishLatch.await();
       } else {
         System.err.println("Query parameters are not of equal length");

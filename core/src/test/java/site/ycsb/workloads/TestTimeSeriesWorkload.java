@@ -45,6 +45,8 @@ import site.ycsb.measurements.Measurements;
 
 import org.testng.annotations.Test;
 
+import java.util.concurrent.CountDownLatch;
+
 public class TestTimeSeriesWorkload {
   
   @Test
@@ -559,8 +561,15 @@ public class TestTimeSeriesWorkload {
     }
 
     @Override
+    public Status subscribeQuery(String []attributeName, String []attributeType,  java.lang.Object []lbound,
+                              java.lang.Object []ubound, Map<String, Long> notificationTimestamps,
+                              CountDownLatch finishLatch) {
+    return Status.NOT_IMPLEMENTED;
+  }
+
+    @Override
     public Status insertWithAttributes(String table, String key, Map<String, ByteIterator> values,
-                                            Map<String, String> attributes) {
+                                            Map<String, String> attributes, long []stTs) {
       return Status.OK;
     }
 
@@ -586,7 +595,7 @@ public class TestTimeSeriesWorkload {
           }
           System.out.print("{" + entry.getKey() + " => ");
           if (entry.getKey().equals("YCSBV")) {
-            System.out.print(new String(Utils.bytesToDouble(entry.getValue().toArray()) + "}"));  
+            System.out.print(new String(Utils.bytesToDouble(entry.getValue().toArray()) + "}"));
           } else if (entry.getKey().equals("YCSBTS")) {
             System.out.print(new String(Utils.bytesToLong(entry.getValue().toArray()) + "}"));
           } else {

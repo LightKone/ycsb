@@ -30,6 +30,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
+import java.util.concurrent.CountDownLatch;
+
 /**
  * Basic DB that just prints out the requested operations, instead of doing them against a database.
  */
@@ -161,7 +163,7 @@ public class GoodBadUglyDB extends DB {
 
   public Status insertWithAttributes(String table, String key,
                                     Map<String, ByteIterator> values,
-                                    Map<String, String> attributes) {
+                                    Map<String, String> attributes, long []stTs) {
     return Status.OK;
   }
 
@@ -179,6 +181,12 @@ public class GoodBadUglyDB extends DB {
 
   public Status query(String []attributeName, String []attributeType,  java.lang.Object []lbound,
                               java.lang.Object []ubound, long []en) {
+    return Status.NOT_IMPLEMENTED;
+  }
+  
+  public Status subscribeQuery(String []attributeName, String []attributeType,  java.lang.Object []lbound,
+                              java.lang.Object []ubound, Map<String, Long> notificationTimestamps,
+                              CountDownLatch finishLatch) {
     return Status.NOT_IMPLEMENTED;
   }
 

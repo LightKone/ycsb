@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Basic DB that just prints out the requested operations, instead of doing them against a database.
@@ -271,7 +272,8 @@ public class BasicDB extends DB {
 
   public Status insertWithAttributes(String table, String key,
                                     Map<String, ByteIterator> values,
-                                    Map<String, String> attributes) {
+                                    Map<String, String> attributes,
+                                    long []stTs) {
     return Status.NOT_IMPLEMENTED;
   }
 
@@ -300,6 +302,12 @@ public class BasicDB extends DB {
 
   public Status query(String []attributeName, String []attributeType,  java.lang.Object []lbound,
                               java.lang.Object []ubound, long []en) {
+    return Status.NOT_IMPLEMENTED;
+  }
+
+  public Status subscribeQuery(String []attributeName, String []attributeType,  java.lang.Object []lbound,
+                              java.lang.Object []ubound, Map<String, Long> notificationTimestamps,
+                              CountDownLatch finishLatch) {
     return Status.NOT_IMPLEMENTED;
   }
 

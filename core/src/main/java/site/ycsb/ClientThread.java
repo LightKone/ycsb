@@ -95,6 +95,10 @@ public class ClientThread implements Runnable {
     workload.preload(props, db);
   }
 
+  public DB getDB() {
+    return db;
+  }
+
   @Override
   public void run() {
     try {

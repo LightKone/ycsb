@@ -636,7 +636,7 @@ public class CoreWorkload extends Workload {
     Status status;
     int numOfRetries = 0;
     do {
-      status = db.insertWithAttributes(table, dbkey, values, attributes);
+      status = db.insertWithAttributes(table, dbkey, values, attributes, null);
       if (null != status && status.isOk()) {
         break;
       }
@@ -888,7 +888,7 @@ public class CoreWorkload extends Workload {
         attributes.putAll(attributeList.get(i));
       }
       attributeGenerator.tripDistanceInsert(Double.parseDouble(attributes.get("f-trip_distance")));
-      db.insertWithAttributes(table, dbkey, values, attributes);
+      db.insertWithAttributes(table, dbkey, values, attributes, null);
     } finally {
       transactioninsertkeysequence.acknowledge(keynum);
     }

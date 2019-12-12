@@ -17,7 +17,7 @@
 package site.ycsb;
 
 import java.util.Collection;
-
+// import site.ycsb.FreshnessMeasurementThread;
 /**
  * A thread that waits for the maximum specified time and then interrupts all the client
  * threads passed at initialization of this thread.
@@ -31,12 +31,14 @@ public class TerminatorThread extends Thread {
   private long maxExecutionTime;
   private Workload workload;
   private long waitTimeOutInMS;
+  private FreshnessMeasurementThread freshnessThread;
 
   public TerminatorThread(long maxExecutionTime, Collection<? extends Thread> threads,
-                          Workload workload) {
+                          Workload workload, FreshnessMeasurementThread freshnessThread) {
     this.maxExecutionTime = maxExecutionTime;
     this.threads = threads;
     this.workload = workload;
+    this.freshnessThread = freshnessThread;
     waitTimeOutInMS = 2000;
     System.err.println("Maximum execution time specified as: " + maxExecutionTime + " secs");
   }
@@ -49,6 +51,7 @@ public class TerminatorThread extends Thread {
       return;
     }
     System.err.println("Maximum time elapsed. Requesting stop for the workload.");
+    freshnessThread.requestStop();
     workload.requestStop();
     System.err.println("Stop requested for workload. Now Joining!");
     for (Thread t : threads) {

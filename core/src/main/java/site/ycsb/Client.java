@@ -381,8 +381,11 @@ public final class Client {
         t.start();
       }
 
+      FreshnessMeasurementThread freshnessThread = new FreshnessMeasurementThread(clients.get(0).getDB(), props);
+      freshnessThread.start();
+
       if (maxExecutionTime > 0) {
-        terminator = new TerminatorThread(maxExecutionTime, threads.keySet(), workload);
+        terminator = new TerminatorThread(maxExecutionTime, threads.keySet(), workload, freshnessThread);
         terminator.start();
       }
 

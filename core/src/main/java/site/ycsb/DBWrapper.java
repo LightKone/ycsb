@@ -24,6 +24,8 @@ import org.apache.htrace.core.Tracer;
 
 import java.util.*;
 
+import java.util.concurrent.CountDownLatch;
+
 /**
  * Wrapper around a "real" DB that measures latencies and counts return codes.
  * Also reports latency separately between OK and failed operations.
@@ -288,12 +290,14 @@ public class DBWrapper extends DB {
 
   public Status insertWithAttributes(String table, String key,
                                     Map<String, ByteIterator> values,
-                                    Map<String, String> attributes) {
+                                    Map<String, String> attributes,
+                                    long []stTs) {
     try (final TraceScope span = tracer.newScope(scopeStringInsertWithAttributes)) {
       long ist = measurements.getIntendedtartTimeNs();
       long st = System.nanoTime();
-      Status res = db.insertWithAttributes(table, key, values, attributes);
+      Status res = db.insertWithAttributes(table, key, values, attributes, null);
       long en = System.nanoTime();
+      stTs[0] = en;
       if (!warmup) {
         measure("INSERT_WITH_ATTRIBUTES", res, ist, st, en);
         measurements.reportStatus("INSERT_WITH_ATTRIBUTES", res);
@@ -336,5 +340,12 @@ public class DBWrapper extends DB {
       }
       return res;
     }
+  }
+
+  public Status subscribeQuery(String []attributeName, String []attributeType,  java.lang.Object []lbound,
+                              java.lang.Object []ubound, Map<String, Long> notificationTimestamps,
+                              CountDownLatch finishLatch) {
+    Status res = db.subscribeQuery(attributeName, attributeType, lbound, ubound, notificationTimestamps, finishLatch);
+    return res;
   }
 }

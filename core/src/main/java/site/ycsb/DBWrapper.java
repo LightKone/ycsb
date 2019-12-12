@@ -297,7 +297,9 @@ public class DBWrapper extends DB {
       long st = System.nanoTime();
       Status res = db.insertWithAttributes(table, key, values, attributes, null);
       long en = System.nanoTime();
-      stTs[0] = en;
+      if (stTs != null) {
+        stTs[0] = en;
+      }
       if (!warmup) {
         measure("INSERT_WITH_ATTRIBUTES", res, ist, st, en);
         measurements.reportStatus("INSERT_WITH_ATTRIBUTES", res);

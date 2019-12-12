@@ -382,7 +382,9 @@ public final class Client {
       }
 
       FreshnessMeasurementThread freshnessThread = new FreshnessMeasurementThread(clients.get(0).getDB(), props);
-      freshnessThread.start();
+      if (Boolean.valueOf(props.getProperty(DO_TRANSACTIONS_PROPERTY, String.valueOf(true)))) {
+        freshnessThread.start();
+      }
 
       if (maxExecutionTime > 0) {
         terminator = new TerminatorThread(maxExecutionTime, threads.keySet(), workload, freshnessThread);

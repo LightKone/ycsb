@@ -260,6 +260,8 @@ public class Measurements {
     if (Boolean.valueOf(props.getProperty("parse", String.valueOf(false)))) {
       OneMeasurement m = getOpMeasurement("QUERY");
       m.exportMeasurements(exporter, runtime);
+      OneMeasurement m1 = getOpMeasurement("FRESHNESS_LATENCY");
+      m1.exportMeasurements(exporter, runtime);
       return;
     }
     for (OneMeasurement measurement : opToMesurementMap.values()) {

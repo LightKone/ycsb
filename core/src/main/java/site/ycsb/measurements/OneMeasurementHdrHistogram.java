@@ -118,7 +118,8 @@ public class OneMeasurementHdrHistogram extends OneMeasurement {
     double throughput = 0;
     File[] files = new File(".").listFiles();
     for (File file : files) {
-      if (file.isFile() && file.getName().startsWith(prefix) && file.getName().endsWith(".hdr")) {
+      if (file.isFile() && file.getName().startsWith(String.format("%s_%s", getName(), prefix))
+          && file.getName().endsWith(".hdr")) {
         System.out.println("File parsed: " + file.getName());
         long timeMin = 0;
         long timeMax = 0;

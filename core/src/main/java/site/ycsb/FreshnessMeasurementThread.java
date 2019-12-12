@@ -72,6 +72,7 @@ public class FreshnessMeasurementThread extends Thread {
         long notificationTs = notificationTimestamps.get(entry.getKey());
         int freshness = (int) ((notificationTs - updateTs) / 1000);
         measurements.measure("FRESHNESS_LATENCY", (int) ((notificationTs - updateTs) / 1000));
+        measurements.reportStatus("FRESHNESS_LATENCY", Status.OK);
       });
   }
 }

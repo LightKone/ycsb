@@ -175,13 +175,6 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    for (long i=0; i<insertstart; i++) {
-      try {
-        line = reader.readLine();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
   }
 
   public static AttributeGenerator getInstance(String filename, long insertstart, long insertcount, Properties p) {
@@ -195,14 +188,21 @@ public class AttributeGenerator extends Generator<List<Map<String, String>>> {
     boolean dotransactions = Boolean.valueOf(p.getProperty(Client.DO_TRANSACTIONS_PROPERTY, String.valueOf(true)));
     if (dotransactions) {
       if (p.getProperty("preload", "db").equals("file")) {
-        for(long i=insertstart; i<insertcount; i++) {
+        for (long i=0; i<insertstart; i++) {
+          try {
+            line = reader.readLine();
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+        for(long i=0; i<insertcount; i++) {
           int keynum = keysequence.nextValue().intValue();
           String dbkey = buildKeyName(keynum);
           List<Map<String, String>> attributeList = nextValue();
           tripDistanceInsert(Double.parseDouble(attributeList.get(4).get("f-trip_distance")));
         }
       } else if (p.getProperty("preload", "db").equals("db")) {
-        for(long i=insertstart; i<insertcount; i++) {
+        for(long i=0; i<insertcount; i++) {
           HashSet<String> fields = null;
           HashMap<String, ByteIterator> cells = new HashMap<String, ByteIterator>();
           Map<String, String> attributes = new HashMap<String, String>();

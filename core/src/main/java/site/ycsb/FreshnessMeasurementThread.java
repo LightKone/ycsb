@@ -68,11 +68,13 @@ public class FreshnessMeasurementThread extends Thread {
     Map<String, Long> updateTimestamps = workloadGenerator.requestStop();
     finishLatch.countDown();
     notificationTimestamps.entrySet().forEach(entry->{
-        long updateTs = updateTimestamps.get(entry.getKey());
-        long notificationTs = notificationTimestamps.get(entry.getKey());
-        int freshness = (int) ((notificationTs - updateTs) / 1000);
-        measurements.measure("FRESHNESS_LATENCY", (int) ((notificationTs - updateTs) / 1000));
-        measurements.reportStatus("FRESHNESS_LATENCY", Status.OK);
+        if (updateTimestamps.containsKey(entry.getKey())) {
+          long updateTs = updateTimestamps.get(entry.getKey());
+          long notificationTs = notificationTimestamps.get(entry.getKey());
+          int freshness = (int) ((notificationTs - updateTs) / 1000);
+          measurements.measure("FRESHNESS_LATENCY", (int) ((notificationTs - updateTs) / 1000));
+          measurements.reportStatus("FRESHNESS_LATENCY", Status.OK);
+        }
       });
   }
 }

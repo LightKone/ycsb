@@ -46,7 +46,7 @@ public class FreshnessMeasurementThread extends Thread {
     }
     this.workloadGenerator = new FreshnessWorkloadGeneratorThread(db, props);
     this.notificationTimestamps = new HashMap<>();
-    this.finishLatch = new CountDownLatch(1);
+    this.finishLatch = new CountDownLatch(2);
   }
 
   public void run() {

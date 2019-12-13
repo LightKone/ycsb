@@ -643,6 +643,7 @@ public class S3Client extends DB {
                               java.lang.Object []ubound, Map<String, Long> notificationTimestamps,
                               CountDownLatch finishLatch) {
     try {
+      final Counter resultCount = new Counter();
       final StreamObserver<ResponseStreamRecord> requestObserver = new StreamObserver<ResponseStreamRecord>() {
         @Override
         public void onNext(ResponseStreamRecord record) {
@@ -650,6 +651,10 @@ public class S3Client extends DB {
           String objectID = record.getLogOp().getObjectId();
           if (objectID.startsWith("fr_")) {
             notificationTimestamps.put(objectID, en);
+            resultCount.inc();
+          }
+          if (resultCount.get() >= 20) {
+            finishLatch.countDown();
           }
         }
         @Override

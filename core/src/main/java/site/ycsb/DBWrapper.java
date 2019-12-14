@@ -335,9 +335,10 @@ public class DBWrapper extends DB {
       long ist = measurements.getIntendedtartTimeNs();
       long st = System.nanoTime();
       Status res = db.query(attributeName, attributeType, lbound, ubound, en);
-      //long en = System.nanoTime();
       if (!warmup) {
-        measure("QUERY", res, ist, st, en[0]);
+        if (res == Status.OK) {
+          measure("QUERY", res, ist, st, en[0]);
+        }
         measurements.reportStatus("QUERY", res);
       }
       return res;
@@ -345,9 +346,8 @@ public class DBWrapper extends DB {
   }
 
   public Status subscribeQuery(String []attributeName, String []attributeType,  java.lang.Object []lbound,
-                              java.lang.Object []ubound, Map<String, Long> notificationTimestamps,
-                              CountDownLatch finishLatch) {
-    Status res = db.subscribeQuery(attributeName, attributeType, lbound, ubound, notificationTimestamps, finishLatch);
+                              java.lang.Object []ubound, CountDownLatch finishLatch) {
+    Status res = db.subscribeQuery(attributeName, attributeType, lbound, ubound, finishLatch);
     return res;
   }
 }

@@ -366,6 +366,7 @@ public class CoreWorkload extends Workload {
   protected int insertionRetryInterval;
   protected boolean s3DB = false;
   private Measurements measurements = Measurements.getMeasurements();
+  private static String clientID;
 
   protected static NumberGenerator getFieldLengthGenerator(Properties p) throws WorkloadException {
     NumberGenerator fieldlengthgenerator;
@@ -421,6 +422,8 @@ public class CoreWorkload extends Workload {
     }
     attributecount =
         Long.parseLong(p.getProperty(Client.ATTRIBUTE_COUNT_PROPERTY, Client.DEFAULT_ATTRIBUTE_COUNT));
+
+    clientID = p.getProperty("client", "0");
 
     String attributedataset = p.getProperty(
         Client.ATTRIBUTE_DATASET_PROPERTY, Client.DEFAULT_ATTRIBUTE_DATASET);
@@ -869,6 +872,8 @@ public class CoreWorkload extends Workload {
     for (int i=0; i<attributeList.size() && i < attributecount; i++) {
       attributes.putAll(attributeList.get(i));
     }
+    long ts = System.nanoTime();
+    attributes.put(String.format("freshnessTimestamp_%s", clientID) , String.valueOf(ts));
     attributeGenerator.tripDistanceInsert(Double.parseDouble(attributes.get("f-trip_distance")));
     db.updateWithAttributes(table, keyname, values, attributes);
   }

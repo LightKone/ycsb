@@ -28,6 +28,7 @@ cd ${YCSB_DIR}
   -p updateproportion=${UPDATEPROPORTION} \
   -p cachedqueryproportion=${CACHEDQUERYPROPORTION} \
   -p preload=${PRELOAD} \
+  -p client=${CLIENTID} \
   -s > ${MEASUREMENT_RESULTS_DIR}/${OUTPUT_FILE_NAME}.txt
 
 if [ "$TYPE" = "run" ]; then

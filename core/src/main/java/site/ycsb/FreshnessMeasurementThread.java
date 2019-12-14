@@ -16,12 +16,8 @@
  */
 package site.ycsb;
 
-import java.util.Map;
-import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.Properties;
-
-import site.ycsb.measurements.Measurements;
 
 /**
  *
@@ -30,10 +26,7 @@ import site.ycsb.measurements.Measurements;
  */
 public class FreshnessMeasurementThread extends Thread {
   private DB db;
-  private FreshnessWorkloadGeneratorThread workloadGenerator;
   private CountDownLatch finishLatch;
-  private Map<String, Long> notificationTimestamps;
-  private Measurements measurements = Measurements.getMeasurements();
 
   public FreshnessMeasurementThread(DB db, Properties props) {
     this.db = db;
@@ -44,13 +37,10 @@ public class FreshnessMeasurementThread extends Thread {
       e.printStackTrace(System.out);
       return;
     }
-    this.workloadGenerator = new FreshnessWorkloadGeneratorThread(db, props);
-    this.notificationTimestamps = new HashMap<>();
-    this.finishLatch = new CountDownLatch(2);
+    this.finishLatch = new CountDownLatch(1);
   }
 
   public void run() {
-    workloadGenerator.start();
     String[] attributeName = new String[1];
     String[] attributeType = new String[1];
     attributeName[0] = "trip_distance";
@@ -58,23 +48,13 @@ public class FreshnessMeasurementThread extends Thread {
     java.lang.Object[] lbound = new java.lang.Object[1];
     java.lang.Object[] ubound = new java.lang.Object[1];
     double lb = 0.0;
-    double ub = 1.0;
+    double ub = 1000.0;
     lbound[0] = String.valueOf(lb);
     ubound[0] = String.valueOf(ub);
-    db.subscribeQuery(attributeName, attributeType, lbound, ubound, notificationTimestamps, finishLatch);
+    db.subscribeQuery(attributeName, attributeType, lbound, ubound, finishLatch);
   }
 
   public void requestStop() {
-    Map<String, Long> updateTimestamps = workloadGenerator.requestStop();
     finishLatch.countDown();
-    notificationTimestamps.entrySet().forEach(entry->{
-        if (updateTimestamps.containsKey(entry.getKey())) {
-          long updateTs = updateTimestamps.get(entry.getKey());
-          long notificationTs = notificationTimestamps.get(entry.getKey());
-          int freshness = (int) ((notificationTs - updateTs) / 1000);
-          measurements.measure("FRESHNESS_LATENCY", (int) ((notificationTs - updateTs) / 1000));
-          measurements.reportStatus("FRESHNESS_LATENCY", Status.OK);
-        }
-      });
   }
 }

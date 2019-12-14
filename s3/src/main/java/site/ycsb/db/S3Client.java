@@ -58,6 +58,9 @@ import com.amazonaws.services.s3.S3ClientOptions;
 
 import io.grpc.stub.StreamObserver;
 import io.grpc.proteusclient.*;
+
+import site.ycsb.measurements.Measurements;
+
 /**
  * S3 Storage client for YCSB framework.
  *
@@ -90,6 +93,8 @@ public class S3Client extends DB {
   private static ProteusClient proteusClient;
   private static String queryResultCount;
   private boolean dotransactions;
+  private static String clientID;
+  private Measurements measurements = Measurements.getMeasurements();
   /**
   * Cleanup any state for this storage.
   * Called once per S3 instance;
@@ -148,6 +153,7 @@ public class S3Client extends DB {
     final int count = INIT_COUNT.incrementAndGet();
     synchronized (S3Client.class){
       Properties propsCL = getProperties();
+      clientID = propsCL.getProperty("client", "0");
       dotransactions = Boolean.valueOf(propsCL.getProperty("dotransactions", String.valueOf(true)));
       String proteusHost;
       int proteusPort;
@@ -584,7 +590,7 @@ public class S3Client extends DB {
         }
         @Override
         public void onError(Throwable t) {
-          System.err.println("Query failed " + t.getMessage());
+          System.err.println("plain Query failed " + t.getMessage());
           t.printStackTrace();
           finishLatch.countDown();
         }
@@ -640,28 +646,29 @@ public class S3Client extends DB {
   }
 
   public Status subscribeQuery(String []attributeName, String []attributeType,  java.lang.Object []lbound,
-                              java.lang.Object []ubound, Map<String, Long> notificationTimestamps,
-                              CountDownLatch finishLatch) {
+                              java.lang.Object []ubound, CountDownLatch finishLatch) {
     try {
       final Counter resultCount = new Counter();
       final StreamObserver<ResponseStreamRecord> requestObserver = new StreamObserver<ResponseStreamRecord>() {
         @Override
         public void onNext(ResponseStreamRecord record) {
           long en = System.nanoTime();
-          String objectID = record.getLogOp().getObjectId();
-          if (objectID.startsWith("fr_")) {
-            notificationTimestamps.put(objectID, en);
-            resultCount.inc();
-          }
-          if (resultCount.get() >= 20) {
-            finishLatch.countDown();
+          for (Attribute attr : record.getLogOp().getPayload().getDelta().getNew().getAttrsList()) {
+            if (attr.getAttrKey().startsWith("freshnesstimestamp")) {
+              if (attr.getAttrKey().split("_")[1].equals(clientID)) {
+                long st = Long.parseLong(attr.getValue().getStr());
+                measurements.measure("FRESHNESS_LATENCY", (int) ((en - st) / 1000));
+                measurements.reportStatus("FRESHNESS_LATENCY", Status.OK);
+              }
+              break;
+            }
           }
         }
         @Override
         public void onError(Throwable t) {
-          System.err.println("Query failed " + t.getMessage());
-          t.printStackTrace();
-          finishLatch.countDown();
+          // System.err.println("subscribeQuery failed " + t.getMessage());
+          // t.printStackTrace();
+          // finishLatch.countDown();
         }
         @Override
         public void onCompleted() {
@@ -698,12 +705,12 @@ public class S3Client extends DB {
           queryPredicates[0] = new QueryPredicate(attributeName[i], attrType, lb, ub);
         }
         proteusClient.query(queryPredicates, null, finishLatch, requestObserver, true);
-        finishLatch.await();
+        // finishLatch.await();
       } else {
         System.err.println("Query parameters are not of equal length");
         return Status.ERROR;
       }
-    } catch (InterruptedException e) {
+    } catch (Exception e) {
       System.err.println("Query failed "+ e.getMessage());
       e.printStackTrace();
       return Status.ERROR;

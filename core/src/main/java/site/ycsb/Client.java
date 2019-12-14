@@ -406,7 +406,6 @@ public final class Client {
           // ignored
         }
       }
-
       en = System.currentTimeMillis();
     }
 
@@ -436,16 +435,6 @@ public final class Client {
       System.exit(0);
     }
 
-    try {
-      try (final TraceScope span = tracer.newScope(CLIENT_EXPORT_MEASUREMENTS_SPAN)) {
-        exportMeasurements(props, opsDone, en - st, en - startTs);
-      }
-    } catch (IOException e) {
-      System.err.println("Could not export measurements, error: " + e.getMessage());
-      e.printStackTrace();
-      System.exit(-1);
-    }
-
     for (ClientThread client : clients) {
       try {
         client.cleanupDB();
@@ -455,6 +444,15 @@ public final class Client {
       }
     }
 
+    try {
+      try (final TraceScope span = tracer.newScope(CLIENT_EXPORT_MEASUREMENTS_SPAN)) {
+        exportMeasurements(props, opsDone, en - st, en - startTs);
+      }
+    } catch (IOException e) {
+      System.err.println("Could not export measurements, error: " + e.getMessage());
+      e.printStackTrace();
+      System.exit(-1);
+    }
     System.exit(0);
   }
 

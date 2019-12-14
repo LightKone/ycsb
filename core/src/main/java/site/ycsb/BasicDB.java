@@ -306,8 +306,7 @@ public class BasicDB extends DB {
   }
 
   public Status subscribeQuery(String []attributeName, String []attributeType,  java.lang.Object []lbound,
-                              java.lang.Object []ubound, Map<String, Long> notificationTimestamps,
-                              CountDownLatch finishLatch) {
+                              java.lang.Object []ubound, CountDownLatch finishLatch) {
     return Status.NOT_IMPLEMENTED;
   }
 

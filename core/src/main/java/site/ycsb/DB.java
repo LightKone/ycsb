@@ -148,8 +148,7 @@ public abstract class DB {
                               java.lang.Object []ubound, long []en);
 
   public abstract Status subscribeQuery(String []attributeName, String []attributeType,  java.lang.Object []lbound,
-                              java.lang.Object []ubound, Map<String, Long> notificationTimestamps,
-                              CountDownLatch finishLatch);
+                              java.lang.Object []ubound, CountDownLatch finishLatch);
 
   public abstract void endWarmup();
 }

@@ -13,6 +13,7 @@ cd ${YCSB_DIR}
   -p useBarrier=${USEBARRIER} \
   -p sleep=${SLEEP} \
   -threads ${THREADS} \
+  -p queryresultcount=${QUERYRESULTCOUNT} \
   -p maxexecutiontime=${EXECUTIONTIME} \
   -p warmuptime=${WARMUPTIME} \
   -p attributedataset=/yellow_tripdata_2019-06.csv \

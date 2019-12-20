@@ -573,13 +573,6 @@ public class S3Client extends DB {
 
   public Status query(String []attributeName, String []attributeType,  java.lang.Object []lbound,
                               java.lang.Object []ubound, long []en) {
-    // for(int i=0; i<attributeName.length; i++) {
-    //   System.out.printf(attributeName[i] +", ");
-    //   System.out.printf(attributeType[i] +", ");
-    //   System.out.printf((java.lang.String) lbound[i] +", ");
-    //   System.out.printf((java.lang.String) ubound[i]);
-    // }
-    // System.out.println();
     final Counter resultCount = new Counter();
     try {
       final CountDownLatch finishLatch = new CountDownLatch(1);
@@ -666,9 +659,6 @@ public class S3Client extends DB {
         }
         @Override
         public void onError(Throwable t) {
-          // System.err.println("subscribeQuery failed " + t.getMessage());
-          // t.printStackTrace();
-          // finishLatch.countDown();
         }
         @Override
         public void onCompleted() {
@@ -705,7 +695,6 @@ public class S3Client extends DB {
           queryPredicates[0] = new QueryPredicate(attributeName[i], attrType, lb, ub);
         }
         proteusClient.query(queryPredicates, null, finishLatch, requestObserver, true);
-        // finishLatch.await();
       } else {
         System.err.println("Query parameters are not of equal length");
         return Status.ERROR;

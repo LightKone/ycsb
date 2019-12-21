@@ -12,6 +12,7 @@ cd ${YCSB_DIR}
   -p table=${TABLE} \
   -p useBarrier=${USEBARRIER} \
   -p sleep=${SLEEP} \
+  -p measure.freshness=${MEASUREFRESHNESS} \
   -threads ${THREADS} \
   -p queryresultcount=${QUERYRESULTCOUNT} \
   -p maxexecutiontime=${EXECUTIONTIME} \

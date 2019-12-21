@@ -382,7 +382,8 @@ public final class Client {
       }
 
       FreshnessMeasurementThread freshnessThread = new FreshnessMeasurementThread(clients.get(0).getDB(), props);
-      if (Boolean.valueOf(props.getProperty(DO_TRANSACTIONS_PROPERTY, String.valueOf(true)))) {
+      if (Boolean.valueOf(props.getProperty(DO_TRANSACTIONS_PROPERTY, String.valueOf(true)))
+          && Boolean.valueOf(props.getProperty("measure.freshness", String.valueOf(false)))) {
         freshnessThread.start();
       }
 
